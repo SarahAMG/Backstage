@@ -21,6 +21,26 @@ section{padding:38px 22px 0}h2{font-size:29px;margin:0 0 5px;letter-spacing:-.03
 
 
 
+
+.mysteryCard{background:#0050ff;color:#fff;border-radius:24px;padding:24px;margin:18px 0;overflow:hidden}
+.mysteryCard .eyebrow{color:#fff;opacity:.8}
+.mysteryCard h2{margin:6px 0 8px;font-size:30px}
+.mysteryCard p{margin:0 0 16px;line-height:1.45}
+.mysteryControls{display:flex;gap:8px;flex-wrap:wrap}
+.mysteryControls select,.mysteryControls button{font-family:Arial,sans-serif;border-radius:999px;padding:12px 14px;font-weight:900}
+.mysteryControls select{border:1px solid rgba(255,255,255,.55);background:#fff;color:#111;min-width:180px}
+.mysteryControls button{border:0;background:#fff;color:#0050ff;cursor:pointer}
+.mysteryResult{display:none;margin-top:18px;background:#fff;color:#111;border-radius:20px;overflow:hidden}
+.mysteryResult.show{display:block}
+.mysteryImage{width:100%;aspect-ratio:16/9;object-fit:cover;background:#eee;display:block}
+.mysteryCopy{padding:18px}
+.mysteryLabel{font-size:10px;font-weight:900;letter-spacing:.12em;color:#0050ff}
+.mysteryArtist{font-size:25px;font-weight:900;margin:5px 0}
+.mysteryMeta{font-size:13px;color:#555;line-height:1.5}
+.mysteryActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.mysteryActions a,.mysteryActions button{font-family:Arial,sans-serif;font-weight:900;border-radius:999px;padding:11px 14px;text-decoration:none;cursor:pointer}
+.mysteryActions a{background:#0050ff;color:#fff}.mysteryActions button{background:#fff;color:#0050ff;border:1px solid #0050ff}
+
 </style></head><body><main class="wrap">
 <div id="heroMount"></div>
 <section id="discoverSection"><h2>Find your next gig</h2><p class="sub">Fresh shows and easy ways to discover what's coming up.</p><div class="grid" id="discoverGrid"></div></section>
@@ -28,6 +48,29 @@ section{padding:38px 22px 0}h2{font-size:29px;margin:0 0 5px;letter-spacing:-.03
 <section id="watchSection"><h2>Watch</h2><p class="sub">From tonight's stages to artist interviews.</p><div id="watchGrid"></div></section>
 <section id="vaultSection"><h2>From the vault</h2><p class="sub">Memorable performances from our venues over the years.</p><div id="vaultGrid"></div></section>
 <section id="moreSection"><h2>More to explore</h2><div id="moreGrid"></div></section>
+
+<section id="mysteryGig" class="mysteryCard">
+  <div class="eyebrow">Feeling spontaneous?</div>
+  <h2>🎲 Mystery Gig</h2>
+  <p>Pick your city. We’ll pick your night.</p>
+  <div class="mysteryControls">
+    <select id="mysteryCity"><option value="">Choose a city</option></select>
+    <button id="mysteryReveal" type="button">REVEAL MY GIG →</button>
+  </div>
+  <div id="mysteryResult" class="mysteryResult">
+    <img id="mysteryImage" class="mysteryImage" alt="">
+    <div class="mysteryCopy">
+      <div class="mysteryLabel">TONIGHT’S PICK</div>
+      <div id="mysteryArtist" class="mysteryArtist"></div>
+      <div id="mysteryMeta" class="mysteryMeta"></div>
+      <div class="mysteryActions">
+        <a id="mysteryTickets" href="#" target="_self">GET TICKETS →</a>
+        <button id="mysteryAgain" type="button">🎲 TRY ANOTHER</button>
+      </div>
+    </div>
+  </div>
+</section>
+
 </main>
 
 <script>
@@ -45,6 +88,40 @@ async function load(){
  document.querySelectorAll("[data-item]").forEach(a=>a.addEventListener("click",()=>track("content_click",a.dataset.item,a.dataset.section)));
  track("page_view");
 }
+
+
+let mysteryShows=[], mysteryLastId=null;
+const mCity=document.getElementById("mysteryCity"),mResult=document.getElementById("mysteryResult");
+function fmtMysteryDate(v){try{return new Date(v+"T12:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}catch(e){return v||""}}
+async function loadMysteryGig(){
+  try{
+    const today=new Date().toISOString().slice(0,10);
+    const r=await fetch(`${SB}/rest/v1/shows?select=id,artist,show_title,city,event_date,venue_id,ticket_url,image_url&event_date=gte.${today}&order=event_date.asc`,{headers:{apikey:KEY,Authorization:`Bearer ${KEY}`}});
+    if(!r.ok) throw new Error();
+    mysteryShows=await r.json();
+    const cities=[...new Set(mysteryShows.map(x=>x.city).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+    mCity.innerHTML='<option value="">Choose a city</option>'+cities.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  }catch(e){mCity.innerHTML='<option value="">Shows unavailable</option>'}
+}
+function revealMystery(reroll=false){
+  const city=mCity.value;
+  if(!city){mCity.focus();return}
+  let pool=mysteryShows.filter(x=>x.city===city);
+  if(pool.length>1 && mysteryLastId) pool=pool.filter(x=>String(x.id)!==String(mysteryLastId));
+  if(!pool.length)return;
+  const s=pool[Math.floor(Math.random()*pool.length)];mysteryLastId=s.id;
+  document.getElementById("mysteryArtist").textContent=s.artist||s.show_title||"Mystery show";
+  document.getElementById("mysteryMeta").innerHTML=`${esc(s.city||"")}<br>${esc(fmtMysteryDate(s.event_date))}`;
+  const img=document.getElementById("mysteryImage");
+  if(s.image_url){img.src=s.image_url;img.style.display="block"}else img.style.display="none";
+  const ticket=document.getElementById("mysteryTickets");ticket.href=s.ticket_url||"#";
+  mResult.classList.add("show");
+  track(reroll?"mystery_reroll":"mystery_reveal",s.artist||"",city);
+}
+document.getElementById("mysteryReveal").addEventListener("click",()=>revealMystery(false));
+document.getElementById("mysteryAgain").addEventListener("click",()=>revealMystery(true));
+document.getElementById("mysteryTickets").addEventListener("click",()=>track("mystery_ticket_click",document.getElementById("mysteryArtist").textContent,mCity.value));
+loadMysteryGig();
 
 load();
 </script></body></html>
