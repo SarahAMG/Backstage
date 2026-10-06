@@ -130,9 +130,14 @@ function revealMystery(reroll=false){
   if(s.image_url){img.src=s.image_url;img.style.display="block"}else img.style.display="none";
   const ticket=document.getElementById("mysteryTickets");ticket.href=s.ticket_url||"#";
   mResult.classList.add("show");
-  track(reroll?"mystery_reroll":"mystery_reveal",s.artist||"",city);
+  if(reroll) track("mystery_reroll",s.artist||"",city);
+  track("mystery_reveal",s.artist||"",city);
 }
-document.getElementById("mysteryReveal").addEventListener("click",()=>revealMystery(false));
+document.getElementById("mysteryReveal").addEventListener("click",()=>{
+  const city=mCity.value;
+  if(city) track("mystery_start","",city);
+  revealMystery(false);
+});
 document.getElementById("mysteryAgain").addEventListener("click",()=>revealMystery(true));
 document.getElementById("mysteryTickets").addEventListener("click",()=>track("mystery_ticket_click",document.getElementById("mysteryArtist").textContent,mCity.value));
 loadMysteryGig();
