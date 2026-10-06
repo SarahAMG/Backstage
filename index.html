@@ -43,12 +43,6 @@ section{padding:38px 22px 0}h2{font-size:29px;margin:0 0 5px;letter-spacing:-.03
 
 </style></head><body><main class="wrap">
 <div id="heroMount"></div>
-<section id="discoverSection"><h2>Find your next gig</h2><p class="sub">Fresh shows and easy ways to discover what's coming up.</p><div class="grid" id="discoverGrid"></div></section>
-<section id="playSection"><h2>Play something</h2><p class="sub">Quick music challenges while you're here.</p><div class="grid" id="playGrid"></div></section>
-<section id="watchSection"><h2>Watch</h2><p class="sub">From tonight's stages to artist interviews.</p><div id="watchGrid"></div></section>
-<section id="vaultSection"><h2>From the vault</h2><p class="sub">Memorable performances from our venues over the years.</p><div id="vaultGrid"></div></section>
-<section id="moreSection"><h2>More to explore</h2><div id="moreGrid"></div></section>
-
 <section id="mysteryGig" class="mysteryCard">
   <div class="eyebrow">Feeling spontaneous?</div>
   <h2>🎲 Mystery Gig</h2>
@@ -70,6 +64,13 @@ section{padding:38px 22px 0}h2{font-size:29px;margin:0 0 5px;letter-spacing:-.03
     </div>
   </div>
 </section>
+<section id="discoverSection"><h2>Find your next gig</h2><p class="sub">Fresh shows and easy ways to discover what's coming up.</p><div class="grid" id="discoverGrid"></div></section>
+<section id="playSection"><h2>Play something</h2><p class="sub">Quick music challenges while you're here.</p><div class="grid" id="playGrid"></div></section>
+<section id="watchSection"><h2>Watch</h2><p class="sub">From tonight's stages to artist interviews.</p><div id="watchGrid"></div></section>
+<section id="vaultSection"><h2>From the vault</h2><p class="sub">Memorable performances from our venues over the years.</p><div id="vaultGrid"></div></section>
+<section id="moreSection"><h2>More to explore</h2><div id="moreGrid"></div></section>
+
+
 
 </main>
 
@@ -95,13 +96,22 @@ const mCity=document.getElementById("mysteryCity"),mResult=document.getElementBy
 function fmtMysteryDate(v){try{return new Date(v+"T12:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}catch(e){return v||""}}
 async function loadMysteryGig(){
   try{
+    let all=[],from=0;
     const today=new Date().toISOString().slice(0,10);
-    const r=await fetch(`${SB}/rest/v1/shows?select=id,artist,show_title,city,event_date,venue_id,ticket_url,image_url&event_date=gte.${today}&order=event_date.asc`,{headers:{apikey:KEY,Authorization:`Bearer ${KEY}`}});
-    if(!r.ok) throw new Error();
-    mysteryShows=await r.json();
+    while(true){
+      const r=await fetch(`${SB}/rest/v1/shows?select=id,artist,city,event_date,genre,ticket_url,image_url,venue_id,venues(name)&event_date=gte.${today}&order=event_date.asc&offset=${from}&limit=1000`,{headers:{apikey:KEY,Authorization:`Bearer ${KEY}`}});
+      if(!r.ok) throw Error("Unable to load shows");
+      const x=await r.json(); all.push(...x);
+      if(x.length<1000) break;
+      from+=1000;
+    }
+    mysteryShows=all;
     const cities=[...new Set(mysteryShows.map(x=>x.city).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
     mCity.innerHTML='<option value="">Choose a city</option>'+cities.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
-  }catch(e){mCity.innerHTML='<option value="">Shows unavailable</option>'}
+  }catch(e){
+    console.warn("Mystery Gig could not load shows",e);
+    mCity.innerHTML='<option value="">Shows unavailable</option>';
+  }
 }
 function revealMystery(reroll=false){
   const city=mCity.value;
@@ -111,7 +121,7 @@ function revealMystery(reroll=false){
   if(!pool.length)return;
   const s=pool[Math.floor(Math.random()*pool.length)];mysteryLastId=s.id;
   document.getElementById("mysteryArtist").textContent=s.artist||s.show_title||"Mystery show";
-  document.getElementById("mysteryMeta").innerHTML=`${esc(s.city||"")}<br>${esc(fmtMysteryDate(s.event_date))}`;
+  document.getElementById("mysteryMeta").innerHTML=`${esc(s.venues?.name||s.city||"")}<br>${esc(fmtMysteryDate(s.event_date))}`;
   const img=document.getElementById("mysteryImage");
   if(s.image_url){img.src=s.image_url;img.style.display="block"}else img.style.display="none";
   const ticket=document.getElementById("mysteryTickets");ticket.href=s.ticket_url||"#";
