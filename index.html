@@ -14,13 +14,12 @@ section{padding:38px 22px 0}h2{font-size:29px;margin:0 0 5px;letter-spacing:-.03
 /* In-page Backstage wrapper for embeddable games/content */
 .wrapModal{position:fixed;inset:0;z-index:9999;background:#fff;display:none;flex-direction:column}
 .wrapModal.open{display:flex}
-.wrapBar{height:58px;flex:0 0 58px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 16px;background:#00008c;color:#fff;font-family:Arial,sans-serif}
-.wrapBack,.wrapExternal{border:0;background:transparent;color:#fff;font-family:Arial,sans-serif;font-size:12px;font-weight:900;cursor:pointer;text-decoration:none}
+.wrapBar{height:58px;flex:0 0 58px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 16px;background:#fff;color:#0050ff;font-family:Arial,sans-serif;border-bottom:1px solid #e5e7eb}
+.wrapBack{border:0;background:transparent;color:#0050ff;font-family:Arial,sans-serif;font-size:12px;font-weight:900;cursor:pointer;text-decoration:none}
 .wrapTitle{font-size:13px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
 .wrapFrame{width:100%;height:calc(100vh - 58px);border:0;background:#fff}
-.wrapFallback{display:none;padding:32px 22px;text-align:center;font-family:Arial,sans-serif}
-.wrapFallback h2{margin:0 0 10px}.wrapFallback p{color:#555;max-width:520px;margin:0 auto 18px}
-@media(max-width:520px){.wrapBar{padding:0 10px}.wrapTitle{font-size:11px}.wrapExternal{font-size:10px}}
+
+@media(max-width:520px){.wrapBar{padding:0 10px}.wrapTitle{font-size:11px}}
 
 </style></head><body><main class="wrap">
 <div id="heroMount"></div>
@@ -35,14 +34,8 @@ section{padding:38px 22px 0}h2{font-size:29px;margin:0 0 5px;letter-spacing:-.03
   <div class="wrapBar">
     <button id="wrapperBack" class="wrapBack" type="button">← BACK TO BACKSTAGE</button>
     <div id="wrapperTitle" class="wrapTitle">Backstage</div>
-    <a id="wrapperExternal" class="wrapExternal" href="#" target="_blank" rel="noopener">OPEN EXTERNALLY ↗</a>
   </div>
   <iframe id="wrapperFrame" class="wrapFrame" title="Backstage content" allow="autoplay; fullscreen; clipboard-write"></iframe>
-  <div id="wrapperFallback" class="wrapFallback">
-    <h2>This content can’t open inside Backstage.</h2>
-    <p>The provider has blocked embedded viewing. Open it externally, then use your browser or app back button to return here.</p>
-    <a id="wrapperFallbackLink" class="btn" href="#" target="_blank" rel="noopener">OPEN CONTENT ↗</a>
-  </div>
 </div>
 
 <script>
@@ -66,13 +59,11 @@ async function load(){
 }
 
 const contentWrapper=document.getElementById("contentWrapper"),wrapperFrame=document.getElementById("wrapperFrame"),
-wrapperTitle=document.getElementById("wrapperTitle"),wrapperExternal=document.getElementById("wrapperExternal"),
-wrapperFallback=document.getElementById("wrapperFallback"),wrapperFallbackLink=document.getElementById("wrapperFallbackLink");
+wrapperTitle=document.getElementById("wrapperTitle");
 let wrapperTimer=null;
 function openWrapper(url,title){
   wrapperTitle.textContent=title||"Backstage";
-  wrapperExternal.href=url;wrapperFallbackLink.href=url;
-  wrapperFallback.style.display="none";wrapperFrame.style.display="block";wrapperFrame.src=url;
+  wrapperFrame.style.display="block";wrapperFrame.src=url;
   contentWrapper.classList.add("open");contentWrapper.setAttribute("aria-hidden","false");
   document.body.style.overflow="hidden";
   clearTimeout(wrapperTimer);
