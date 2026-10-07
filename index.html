@@ -71,56 +71,10 @@ section{padding:38px 22px 0}h2{font-size:29px;margin:0 0 5px;letter-spacing:-.03
 .wsCell.found[data-found="4"]{background:rgba(130,220,250,.48)!important}
 .wsStart,.wsSubmit{background:#0050ff!important}
 
-/* Larger mobile word-search treatment */
-@media(max-width:720px){
-  #weeklyWordSearch.wordSearchCard{
-    padding:14px 8px 18px;
-    margin-left:-8px;
-    margin-right:-8px;
-    border-left:0;
-    border-right:0;
-    border-radius:14px;
-  }
-  #weeklyWordSearch .wsTop,
-  #weeklyWordSearch .wsBar,
-  #weeklyWordSearch .wsWords,
-  #weeklyWordSearch .wsFinish{
-    margin-left:6px;
-    margin-right:6px;
-  }
-  #weeklyWordSearch .wsGridWrap{
-    width:100%;
-    padding:4px 0 10px;
-    overflow:hidden;
-  }
-  #weeklyWordSearch .wsGrid{
-    width:100%;
-    max-width:none;
-    grid-template-columns:repeat(14,minmax(0,1fr));
-    gap:2px;
-  }
-  #weeklyWordSearch .wsCell{
-    width:100%;
-    height:auto;
-    aspect-ratio:1;
-    min-width:0;
-    font-size:clamp(12px,3.45vw,16px);
-    border-radius:4px;
-  }
-}
-@media(max-width:390px){
-  #weeklyWordSearch.wordSearchCard{padding-left:5px;padding-right:5px;margin-left:-10px;margin-right:-10px}
-  #weeklyWordSearch .wsGrid{gap:1.5px}
-  #weeklyWordSearch .wsCell{font-size:clamp(11px,3.35vw,15px)}
-}
 
-
-.wsTopActions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-.wsMinimise{font:800 10px Arial,sans-serif;letter-spacing:.04em;border:1px solid #e1e4e8;background:#fff;color:#667085;border-radius:999px;padding:8px 10px;cursor:pointer}
-#wsCollapsible.wsCollapsed{display:none}
-.wsRevisitActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.wsViewBoard{font:900 12px Arial,sans-serif;border:1px solid #0050ff;background:#fff;color:#0050ff;border-radius:999px;padding:10px 14px;cursor:pointer}
-@media(max-width:720px){.wsTopActions{align-items:flex-end}.wsMinimise{padding:7px 9px}}
+.wsRotateHint{display:none;font:700 12px Arial,sans-serif;color:#667085;background:#f7f8fa;border:1px solid #eceef1;border-radius:10px;padding:9px 11px;margin:10px 0 12px;text-align:center}
+@media(max-width:720px) and (orientation:portrait){.wsRotateHint{display:block}}
+@media(orientation:landscape){.wsRotateHint{display:none}}
 </style></head><body><main class="wrap">
 <div id="heroMount"></div>
 <section id="mysteryGig" class="mysteryCard">
@@ -152,7 +106,8 @@ section{padding:38px 22px 0}h2{font-size:29px;margin:0 0 5px;letter-spacing:-.03
   <button id="wsStart" class="wsStart" type="button">PLAY THIS WEEK →</button>
   <div id="wsGame" class="wsGame">
     <div class="wsBar"><div id="wsTimer" class="wsTimer">00:00</div><button id="wsPause" class="wsPause" type="button">PAUSE</button><div id="wsProgress" class="wsProgress">0 / 12 FOUND</div></div>
-    <div class="wsLayout"><div class="wsGridWrap"><div id="wsGrid" class="wsGrid"></div></div><div class="wsWords"><h3>Artists to find</h3><div id="wsWords"></div></div></div>
+    <div class="wsRotateHint">For a bigger puzzle, turn your phone sideways ↻</div>
+<div class="wsLayout"><div class="wsGridWrap"><div id="wsGrid" class="wsGrid"></div></div><div class="wsWords"><h3>Artists to find</h3><div id="wsWords"></div></div></div>
     <div id="wsFinish" class="wsFinish">
       <h3 id="wsFinishTitle">YOU FOUND THEM ALL</h3><p>Think that's leaderboard material?</p>
       <div class="wsEntry"><input id="wsName" maxlength="20" autocomplete="nickname" placeholder="Your name"><button id="wsSubmit" class="wsSubmit" type="button">SUBMIT SCORE</button></div><div id="wsMsg" class="wsMsg"></div>
