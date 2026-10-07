@@ -265,17 +265,19 @@ document.getElementById("wsPause").addEventListener("click",()=>{
   }
 });
 document.getElementById("wsSubmit").addEventListener("click",wsSubmit);
-document.getElementById("wsMinimise").addEventListener("click",()=>{
-  const body=document.getElementById("wsCollapsible"),btn=document.getElementById("wsMinimise"),collapsed=body.classList.toggle("wsCollapsed");
-  btn.textContent=collapsed?"+":"−";btn.setAttribute("aria-label",collapsed?"View word search":"Minimise word search");btn.title=collapsed?"View game":"Minimise";
-  btn.setAttribute("aria-expanded",String(!collapsed));
+const wsToggleBtn=document.getElementById("wsMinimise");
+const wsToggleBody=document.getElementById("wsCollapsible");
+function setWsCollapsed(collapsed){
+  wsToggleBody.hidden=collapsed;
+  wsToggleBody.style.display=collapsed?"none":"";
+  wsToggleBtn.textContent=collapsed?"+":"−";
+  wsToggleBtn.setAttribute("aria-label",collapsed?"View word search":"Minimise word search");
+  wsToggleBtn.title=collapsed?"View game":"Minimise";
+  wsToggleBtn.setAttribute("aria-expanded",String(!collapsed));
   localStorage.setItem("amg_wordsearch_minimised_"+wsWeekKey(),collapsed?"1":"0");
-});
-if(localStorage.getItem("amg_wordsearch_minimised_"+wsWeekKey())==="1"){
-  document.getElementById("wsCollapsible").classList.add("wsCollapsed");
-  document.getElementById("wsMinimise").textContent="+";document.getElementById("wsMinimise").setAttribute("aria-label","View word search");document.getElementById("wsMinimise").title="View game";
-  document.getElementById("wsMinimise").setAttribute("aria-expanded","false");
 }
+wsToggleBtn.addEventListener("click",()=>setWsCollapsed(!wsToggleBody.hidden));
+if(localStorage.getItem("amg_wordsearch_minimised_"+wsWeekKey())==="1") setWsCollapsed(true);
 document.addEventListener("click",e=>{const a=e.target.closest("[data-ws-ticket]");if(a)track("wordsearch_ticket_click",a.dataset.wsTicket,"Play")});wsInit();
 
 
