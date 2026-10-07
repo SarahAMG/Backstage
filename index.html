@@ -139,11 +139,19 @@ async function load(){
 }
 
 
-let mysteryShows=[], mysteryLastId=null;
+let mysteryShows=[], mysteryLastId=null, mysteryDefaultImage="";
 const mCity=document.getElementById("mysteryCity"),mResult=document.getElementById("mysteryResult");
 function fmtMysteryDate(v){try{return new Date(v+"T12:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}catch(e){return v||""}}
 async function loadMysteryGig(){
   try{
+    
+    try{
+      const dr=await fetch(`${SUPABASE_URL}/rest/v1/halloween_config?select=default_artist_image_url&show_id=eq.__settings__&limit=1`,{headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${SUPABASE_KEY}`}});
+      if(dr.ok){
+        const d=await dr.json();
+        mysteryDefaultImage=String(d?.[0]?.default_artist_image_url||"").trim();
+      }
+    }catch(e){console.warn("Mystery Gig default image could not load",e)}
     let all=[],from=0;
     const today=new Date().toISOString().slice(0,10);
     while(true){
@@ -171,7 +179,13 @@ function revealMystery(reroll=false){
   document.getElementById("mysteryArtist").textContent=s.artist||s.show_title||"Mystery show";
   document.getElementById("mysteryMeta").innerHTML=`${esc(s.venues?.name||s.city||"")}<br>${esc(fmtMysteryDate(s.event_date))}`;
   const img=document.getElementById("mysteryImage");
-  if(s.image_url){img.src=s.image_url;img.style.display="block"}else img.style.display="none";
+  const showImage=String(s.image_url||"").trim(),fallbackImage=String(mysteryDefaultImage||"").trim();
+  img.onerror=null;
+  if(showImage||fallbackImage){
+    img.style.display="block";
+    img.onerror=()=>{img.onerror=null;if(fallbackImage&&img.src!==fallbackImage)img.src=fallbackImage;else img.style.display="none"};
+    img.src=showImage||fallbackImage;
+  }else{img.removeAttribute("src");img.style.display="none"};
   const ticket=document.getElementById("mysteryTickets");ticket.href=s.ticket_url||"#";
   mResult.classList.add("show");
   if(reroll) track("mystery_reroll",s.artist||"",city);
