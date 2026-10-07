@@ -47,9 +47,9 @@ section{padding:38px 22px 0}h2{font-size:29px;margin:0 0 5px;letter-spacing:-.03
 
 
 /* Weekly native word search */
-.wordSearchCard{background:#fff;border:1px solid #e8e8e8;border-radius:20px;padding:22px;margin:18px 0;box-shadow:0 4px 14px rgba(0,0,0,.035)}
+.wordSearchCard{background:#fff;border:1px solid #e8e8e8;border-top:4px solid var(--amg-blue);border-radius:20px;padding:22px;margin:18px 0;box-shadow:0 4px 14px rgba(0,0,0,.035)}
 .wsTop{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}.wsTop .eyebrow{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#667085}.wsTop h2{margin:6px 0 5px;font-size:25px;color:#111}.wsTop p{margin:0;color:#555;line-height:1.45}.wsWeek{font-size:11px;font-weight:800;color:#667085;background:#f7f7f8;border-radius:999px;padding:8px 11px}
-.wsPause{font-family:Arial,sans-serif;border:1px solid #d9dde5;background:#fff;color:#4b5563;border-radius:999px;padding:8px 13px;font-weight:900;cursor:pointer}.wsLayout.wsPaused{filter:blur(14px);opacity:.28;pointer-events:none;user-select:none}.wsStart,.wsSubmit{font-family:Arial,sans-serif;border:0;background:#0050ff;color:#fff;border-radius:999px;padding:11px 16px;font-weight:900;cursor:pointer}.wsGame{display:none;margin-top:20px;border-top:1px solid #ededed;padding-top:20px}.wsGame.show{display:block}.wsBar{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:14px}.wsTimer{font-size:20px;font-weight:800;color:#30323a;font-variant-numeric:tabular-nums}.wsProgress{font-size:12px;font-weight:700;color:#7a8190}
+.wsPause{font-family:Arial,sans-serif;border:1px solid #d9dde5;background:#fff;color:#4b5563;border-radius:999px;padding:8px 13px;font-weight:900;cursor:pointer}.wsLayout.wsPaused{filter:blur(14px);opacity:.28;pointer-events:none;user-select:none}.wsStart,.wsSubmit{font-family:Arial,sans-serif;border:0;background:var(--amg-deep);color:#fff;border-radius:999px;padding:11px 16px;font-weight:900;cursor:pointer}.wsGame{display:none;margin-top:20px;border-top:1px solid #ededed;padding-top:20px}.wsGame.show{display:block}.wsBar{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:14px}.wsTimer{font-size:20px;font-weight:800;color:#30323a;font-variant-numeric:tabular-nums}.wsProgress{font-size:12px;font-weight:700;color:#7a8190}
 .wsLayout{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,.7fr);gap:24px;align-items:start}.wsGridWrap{overflow:hidden;width:100%;max-width:100%;padding:3px 0 10px;overscroll-behavior:contain}.wsGrid{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:clamp(2px,.6vw,5px);width:100%;max-width:620px;user-select:none;-webkit-user-select:none;touch-action:none;overscroll-behavior:contain}.wsCell{width:100%;aspect-ratio:1;height:auto;min-width:0;border-radius:clamp(3px,.8vw,8px);background:#fbfbfc;border:1px solid #f0f1f3;display:flex;align-items:center;justify-content:center;font-size:clamp(10px,2.7vw,15px);font-weight:700;color:#30323a;cursor:pointer}.wsCell.sel{background:#eef3ff;box-shadow:inset 0 0 0 1px rgba(0,80,255,.10)}.wsCell.found{background:#dfe9ff;color:#24324a;box-shadow:inset 0 0 0 1px rgba(0,80,255,.08)}.wsWords h3,.wsLeaderboard h3{margin:0 0 10px;font-size:15px}.wsWords #wsWords{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.wsWord{font-size:12px;font-weight:700;padding:9px 10px;color:#444;background:#fafafa;border:1px solid #eeeeef;border-radius:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.wsWord.found{background:#f3f6fc;border-color:#dfe6f3;color:#7a8190;text-decoration:line-through}.wsFinish{display:none;margin-top:18px;border-top:1px solid #ededed;padding-top:18px}.wsFinish.show{display:block}.wsFinish h3{margin:0 0 4px;font-size:22px}.wsFinish p{margin:0 0 12px;color:#555}.wsEntry{display:flex;gap:8px;flex-wrap:wrap}.wsEntry input{min-width:190px;flex:1;border:1px solid #d0d5dd;border-radius:10px;padding:11px 12px;font:700 14px Arial,sans-serif}.wsMsg{font-size:12px;font-weight:800;margin-top:8px}.wsLeaderboard{margin-top:18px}.wsRank{display:grid;grid-template-columns:38px 1fr auto;gap:8px;padding:9px 0;border-bottom:1px solid #eee;font-size:13px}.wsRank b{color:#0050ff}.wsTickets{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px}.wsTicket{display:flex;justify-content:space-between;gap:10px;align-items:center;border:1px solid #e8e8e8;border-radius:12px;padding:11px;text-decoration:none;color:#111}.wsTicket strong{font-size:13px}.wsTicket span{font-size:11px;color:#0050ff;font-weight:900}
 @media(max-width:720px){.wsLayout{grid-template-columns:1fr;gap:18px}.wsGrid{grid-template-columns:repeat(14,minmax(0,1fr));width:100%}.wsWords #wsWords{grid-template-columns:repeat(2,minmax(0,1fr))}.wsTickets{grid-template-columns:1fr}.wordSearchCard{padding:14px;margin-left:0;margin-right:0}.wsBar{gap:8px;flex-wrap:wrap}.wsTimer{font-size:18px}}
 
@@ -60,6 +60,21 @@ section{padding:38px 22px 0}h2{font-size:29px;margin:0 0 5px;letter-spacing:-.03
   .wsWords #wsWords{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
   .wsWord{padding:8px 7px;font-size:11px}
 }
+
+:root{--amg-green:#00dc7d;--amg-pink:#fa96ff;--amg-yellow:#fadc00;--amg-orange:#ffa55a;--amg-sky:#82dcfa;--amg-deep:#00008c;--amg-blue:#0050ff}
+
+/* AMG accent-colour highlighters */
+.wsCell.found{color:#101828;box-shadow:none}
+.wsCell.found[data-found="0"]{background:rgba(0,220,125,.42)}
+.wsCell.found[data-found="1"]{background:rgba(250,150,255,.45)}
+.wsCell.found[data-found="2"]{background:rgba(250,220,0,.48)}
+.wsCell.found[data-found="3"]{background:rgba(255,165,90,.45)}
+.wsCell.found[data-found="4"]{background:rgba(130,220,250,.48)}
+.wsWord.found[data-found="0"]{background:rgba(0,220,125,.16);border-color:rgba(0,220,125,.35)}
+.wsWord.found[data-found="1"]{background:rgba(250,150,255,.16);border-color:rgba(250,150,255,.35)}
+.wsWord.found[data-found="2"]{background:rgba(250,220,0,.18);border-color:rgba(250,220,0,.38)}
+.wsWord.found[data-found="3"]{background:rgba(255,165,90,.16);border-color:rgba(255,165,90,.35)}
+.wsWord.found[data-found="4"]{background:rgba(130,220,250,.18);border-color:rgba(130,220,250,.38)}
 </style></head><body><main class="wrap">
 <div id="heroMount"></div>
 <section id="mysteryGig" class="mysteryCard">
@@ -196,7 +211,7 @@ function wsPaint(line){document.querySelectorAll(".wsCell").forEach(x=>x.classLi
 function wsTry(line){
  const hit=wsPuzzle?.placed.findIndex((x,i)=>!wsFound.has(i)&&(x.cells.join(",")===line.join(",")||x.cells.slice().reverse().join(",")===line.join(",")));
  document.querySelectorAll(".wsCell").forEach(x=>x.classList.remove("sel"));if(hit<0)return;
- wsFound.add(hit);wsPuzzle.placed[hit].cells.forEach(i=>document.querySelector(`.wsCell[data-i="${i}"]`)?.classList.add("found"));document.querySelector(`.wsWord[data-word="${hit}"]`)?.classList.add("found");document.getElementById("wsProgress").textContent=`${wsFound.size} / ${wsPuzzle.placed.length} FOUND`;
+ wsFound.add(hit);const accent=hit%5;wsPuzzle.placed[hit].cells.forEach(i=>{const el=document.querySelector(`.wsCell[data-i="${i}"]`);if(el){el.classList.add("found");el.dataset.found=accent}});const wordEl=document.querySelector(`.wsWord[data-word="${hit}"]`);if(wordEl){wordEl.classList.add("found");wordEl.dataset.found=accent}document.getElementById("wsProgress").textContent=`${wsFound.size} / ${wsPuzzle.placed.length} FOUND`;
  if(wsFound.size===wsPuzzle.placed.length)wsComplete();
 }
 function wsComplete(){clearInterval(wsTimerId);wsElapsed=Math.max(1,Math.floor((Date.now()-wsStartAt-wsPausedTotal)/1000));document.getElementById("wsTimer").textContent=wsTime(wsElapsed);document.getElementById("wsFinishTitle").textContent=`YOU FOUND THEM ALL — ${wsTime(wsElapsed)}`;document.getElementById("wsFinish").classList.add("show");track("wordsearch_complete",wsWeekKey(),"Play");wsLoadBoard();document.getElementById("wsTickets").innerHTML=wsPuzzle.placed.map(x=>`<a class="wsTicket" href="${esc(x.ticket_url||"#")}" target="_self" data-ws-ticket="${esc(x.artist)}"><strong>${esc(x.artist)}</strong><span>TICKETS →</span></a>`).join("")}
