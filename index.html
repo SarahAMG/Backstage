@@ -70,6 +70,57 @@ section{padding:38px 22px 0}h2{font-size:29px;margin:0 0 5px;letter-spacing:-.03
 .wsCell.found[data-found="3"]{background:rgba(255,165,90,.45)!important}
 .wsCell.found[data-found="4"]{background:rgba(130,220,250,.48)!important}
 .wsStart,.wsSubmit{background:#0050ff!important}
+
+/* Larger mobile word-search treatment */
+@media(max-width:720px){
+  #weeklyWordSearch.wordSearchCard{
+    padding:14px 8px 18px;
+    margin-left:-8px;
+    margin-right:-8px;
+    border-left:0;
+    border-right:0;
+    border-radius:14px;
+  }
+  #weeklyWordSearch .wsTop,
+  #weeklyWordSearch .wsBar,
+  #weeklyWordSearch .wsWords,
+  #weeklyWordSearch .wsFinish{
+    margin-left:6px;
+    margin-right:6px;
+  }
+  #weeklyWordSearch .wsGridWrap{
+    width:100%;
+    padding:4px 0 10px;
+    overflow:hidden;
+  }
+  #weeklyWordSearch .wsGrid{
+    width:100%;
+    max-width:none;
+    grid-template-columns:repeat(14,minmax(0,1fr));
+    gap:2px;
+  }
+  #weeklyWordSearch .wsCell{
+    width:100%;
+    height:auto;
+    aspect-ratio:1;
+    min-width:0;
+    font-size:clamp(12px,3.45vw,16px);
+    border-radius:4px;
+  }
+}
+@media(max-width:390px){
+  #weeklyWordSearch.wordSearchCard{padding-left:5px;padding-right:5px;margin-left:-10px;margin-right:-10px}
+  #weeklyWordSearch .wsGrid{gap:1.5px}
+  #weeklyWordSearch .wsCell{font-size:clamp(11px,3.35vw,15px)}
+}
+
+
+.wsTopActions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.wsMinimise{font:800 10px Arial,sans-serif;letter-spacing:.04em;border:1px solid #e1e4e8;background:#fff;color:#667085;border-radius:999px;padding:8px 10px;cursor:pointer}
+#wsCollapsible.wsCollapsed{display:none}
+.wsRevisitActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.wsViewBoard{font:900 12px Arial,sans-serif;border:1px solid #0050ff;background:#fff;color:#0050ff;border-radius:999px;padding:10px 14px;cursor:pointer}
+@media(max-width:720px){.wsTopActions{align-items:flex-end}.wsMinimise{padding:7px 9px}}
 </style></head><body><main class="wrap">
 <div id="heroMount"></div>
 <section id="mysteryGig" class="mysteryCard">
@@ -96,7 +147,8 @@ section{padding:38px 22px 0}h2{font-size:29px;margin:0 0 5px;letter-spacing:-.03
 <section id="discoverSection"><h2>Find your next gig</h2><p class="sub">Fresh shows and easy ways to discover what's coming up.</p><div class="grid" id="discoverGrid"></div></section>
 
 <section id="weeklyWordSearch" class="wordSearchCard">
-  <div class="wsTop"><div><div class="eyebrow">WEEKLY WORD SEARCH</div><h2>Find this week's artists.</h2><p>Twelve upcoming artists. New puzzle every Monday.</p></div><div id="wsWeek" class="wsWeek"></div></div>
+  <div class="wsTop"><div><div class="eyebrow">WEEKLY WORD SEARCH</div><h2>Find this week's artists.</h2><p>Twelve upcoming artists. New puzzle every Monday.</p></div><div class="wsTopActions"><div id="wsWeek" class="wsWeek"></div><button id="wsMinimise" class="wsMinimise" type="button" aria-expanded="true">MINIMISE</button></div></div>
+  <div id="wsCollapsible">
   <button id="wsStart" class="wsStart" type="button">PLAY THIS WEEK →</button>
   <div id="wsGame" class="wsGame">
     <div class="wsBar"><div id="wsTimer" class="wsTimer">00:00</div><button id="wsPause" class="wsPause" type="button">PAUSE</button><div id="wsProgress" class="wsProgress">0 / 12 FOUND</div></div>
@@ -107,6 +159,7 @@ section{padding:38px 22px 0}h2{font-size:29px;margin:0 0 5px;letter-spacing:-.03
       <div class="wsLeaderboard"><h3>THIS WEEK'S FASTEST FANS</h3><div id="wsLeaderboard"></div></div>
       
     </div>
+  </div>
   </div>
 </section>
 <section id="playSection"><h2>Play something</h2><p class="sub">Quick music challenges while you're here.</p><div class="grid" id="playGrid"></div></section>
@@ -229,10 +282,20 @@ for(let i=pool.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[pool[i],pool[j
 let p=null;for(let i=0;i<30;i++){p=wsBuild(pool.slice(i,i+WS_COUNT),week+i);if(p.placed.length===WS_COUNT)break}if(!p||p.placed.length<5)throw Error("not enough artists");wsPuzzle=p;wsRender(p);wsLoadBoard();
 if(localStorage.getItem("amg_wordsearch_completed_"+week)==="1"){
   wsStarted=true;
-  document.getElementById("wsStart").disabled=true;
-  document.getElementById("wsStart").textContent="ISSUE COMPLETED ✓";
-  document.getElementById("wsStart").style.opacity=".55";
-  document.getElementById("wsStart").style.cursor="default";
+  const startBtn=document.getElementById("wsStart");
+  startBtn.disabled=true;
+  startBtn.textContent="ISSUE COMPLETED ✓";
+  startBtn.style.opacity=".55";
+  startBtn.style.cursor="default";
+  document.getElementById("wsGame").classList.add("show");
+  document.getElementById("wsFinish").classList.add("show");
+  document.getElementById("wsFinishTitle").textContent="ISSUE COMPLETED ✓";
+  document.querySelector("#wsFinish p").textContent="You’ve already completed this issue.";
+  document.querySelector(".wsEntry").style.display="none";
+  document.getElementById("wsMsg").textContent="";
+  document.querySelector(".wsLayout").style.display="none";
+  document.querySelector(".wsBar").style.display="none";
+  wsLoadBoard();
 }
 }catch(e){console.warn(e);document.getElementById("weeklyWordSearch").style.display="none"}}
 document.getElementById("wsStart").addEventListener("click",()=>{if(!wsPuzzle||wsStarted)return;wsStarted=true;wsStartAt=Date.now();document.getElementById("wsGame").classList.add("show");document.getElementById("wsStart").style.display="none";wsTimerId=setInterval(()=>document.getElementById("wsTimer").textContent=wsTime((Date.now()-wsStartAt-wsPausedTotal)/1000),250);track("wordsearch_start",wsWeekKey(),"Play")});
@@ -250,7 +313,19 @@ document.getElementById("wsPause").addEventListener("click",()=>{
     wsTimerId=setInterval(()=>document.getElementById("wsTimer").textContent=wsTime((Date.now()-wsStartAt-wsPausedTotal)/1000),250);
   }
 });
-document.getElementById("wsSubmit").addEventListener("click",wsSubmit);document.addEventListener("click",e=>{const a=e.target.closest("[data-ws-ticket]");if(a)track("wordsearch_ticket_click",a.dataset.wsTicket,"Play")});wsInit();
+document.getElementById("wsSubmit").addEventListener("click",wsSubmit);
+document.getElementById("wsMinimise").addEventListener("click",()=>{
+  const body=document.getElementById("wsCollapsible"),btn=document.getElementById("wsMinimise"),collapsed=body.classList.toggle("wsCollapsed");
+  btn.textContent=collapsed?"VIEW GAME":"MINIMISE";
+  btn.setAttribute("aria-expanded",String(!collapsed));
+  localStorage.setItem("amg_wordsearch_minimised_"+wsWeekKey(),collapsed?"1":"0");
+});
+if(localStorage.getItem("amg_wordsearch_minimised_"+wsWeekKey())==="1"){
+  document.getElementById("wsCollapsible").classList.add("wsCollapsed");
+  document.getElementById("wsMinimise").textContent="VIEW GAME";
+  document.getElementById("wsMinimise").setAttribute("aria-expanded","false");
+}
+document.addEventListener("click",e=>{const a=e.target.closest("[data-ws-ticket]");if(a)track("wordsearch_ticket_click",a.dataset.wsTicket,"Play")});wsInit();
 
 
 load();
