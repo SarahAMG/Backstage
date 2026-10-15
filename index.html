@@ -304,7 +304,12 @@ document.getElementById("wsWeek").textContent=`ISSUE #${issueNo}`;let all=[],fro
   if(isSingleWord&&a.length>=4&&a.length<=12&&!uniq.has(a)){
     uniq.set(a,{answer:a,artist:artist,ticket_url:s.ticket_url});
   }
-});const rnd=wsRand(wsHash(week+"AMG-ARTISTS")),pool=[...uniq.values()].sort((a,b)=>a.answer.localeCompare(b.answer));
+});const rnd=wsRand(wsHash(week+"AMG-ARTISTS")),allArtists=[...uniq.values()].sort((a,b)=>a.answer.localeCompare(b.answer));
+// From the next issue, alternate disjoint artist pools so adjacent weeks do not overlap.
+const weekMonday=new Date(Date.UTC(iy,0,4));weekMonday.setUTCDate(weekMonday.getUTCDate()-((weekMonday.getUTCDay()+6)%7)+(iw-1)*7);
+const weeklyParity=((Math.floor(weekMonday.getTime()/604800000)%2)+2)%2;
+const freshPool=allArtists.filter(x=>((wsHash(x.answer)>>>0)%2)===weeklyParity);
+const pool=weekMonday>=new Date('2026-10-19T00:00:00Z')&&freshPool.length>=WS_COUNT?freshPool:allArtists;
 for(let i=pool.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}
 let p=null;for(let i=0;i<30;i++){p=wsBuild(pool.slice(i,i+WS_COUNT),week+i);if(p.placed.length===WS_COUNT)break}if(!p||p.placed.length<5)throw Error("not enough artists");wsPuzzle=p;wsRender(p);wsLoadBoard();
 wsResult=wsReadResult();let previouslySubmitted=false;try{previouslySubmitted=localStorage.getItem('amg_wordsearch_completed_'+week)==='1'}catch(e){}
