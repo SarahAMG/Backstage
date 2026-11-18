@@ -127,7 +127,35 @@ section{padding:38px 22px 0}h2{font-size:29px;margin:0 0 5px;letter-spacing:-.03
 .gamePlayedBadge{position:absolute;top:12px;right:12px;z-index:4;display:inline-flex;align-items:center;padding:8px 11px;background:#fff;color:#0050ff;border:1px solid #e2e9f7;border-radius:999px;font-size:10px;line-height:1.2;font-weight:800;letter-spacing:.2px;box-shadow:0 2px 10px #0000000d;pointer-events:none}.gameTile:has(.gamePlayedBadge){outline:1px solid #dce7ff}
 
 
-</style></head><body><main class="wrap">
+</style><style id="favourites-style">
+.fav-heart{display:inline-flex;align-items:center;justify-content:center;flex:none;width:42px;height:42px;border-radius:50%;border:1px solid #dfe5f2;background:#fff;color:#0050ff;cursor:pointer;font-size:24px;line-height:1;box-shadow:0 2px 9px #00000012}.fav-heart[aria-pressed="true"]{color:#0050ff;background:#eaf0ff;border-color:#a9bfff}.fav-heart:focus-visible{outline:3px solid #0050ff;outline-offset:2px}.fav-inline{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.fav-inline .date,.fav-inline .new{margin:0}.fav-row{display:flex;gap:10px;align-items:center;justify-content:space-between}.fav-row .fav-heart{width:34px;height:34px;font-size:19px}.favs-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.favs-card{border:1px solid #e6eaf2;border-radius:18px;overflow:hidden;background:white}.favs-img{width:100%;aspect-ratio:16/9;object-fit:cover;background:#e8efff}.favs-placeholder{aspect-ratio:16/9;background:linear-gradient(125deg,#0050ff,#00008c);display:grid;place-items:center;color:white;font-weight:900;font-size:22px}.favs-content{padding:15px}.favs-content h3{font-size:19px;margin:0 0 6px}.favs-content p{font-size:12px;color:#606879;margin:0 0 12px}.favs-ticket{display:block;background:#0050ff;color:white;border-radius:999px;padding:11px;text-align:center;text-decoration:none;font-size:12px;font-weight:900}.favs-empty{background:#f5f7ff;border:1px solid #e2e9fa;padding:20px;border-radius:18px;color:#535b70}.favs-empty p{margin:5px 0 0}.favs-note{font-size:12px;color:#677083;margin-top:10px}@media(max-width:650px){.favs-list{grid-template-columns:1fr}}
+</style></head><script id="favourites-core">
+(function(){
+ const KEY='o2-favourite-shows-v1';
+ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&quot;'}[c]));
+ function read(){try{const v=JSON.parse(localStorage.getItem(KEY)||'{}');return v&&typeof v==='object'&&!Array.isArray(v)?v:{}}catch(e){return {}}}
+ let state=read();
+ function persist(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){console.warn('Unable to store favourites',e)}window.dispatchEvent(new Event('o2-favourites-changed'))}
+ function id(s){return String(s?.id??'').trim()}
+ function record(s){return {id:id(s),artist:String(s.artist||''),city:String(s.city||''),venue:String(s.venue||s.venues?.name||''),date:String(s.event_date||s.date||'').slice(0,10),ticket_url:String(s.ticket_url||''),image_url:String(s.image_url||''),updated:Date.now()}}
+ function save(s){const x=record(s);if(!x.id)return false;if(state[x.id]&&!state[x.id].deleted){state[x.id]={...state[x.id],deleted:true,updated:Date.now()}}else state[x.id]={...state[x.id],...x,deleted:false};persist();return !state[x.id].deleted}
+ function active(){return Object.values(state).filter(x=>x&&!x.deleted&&x.id).sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'))}
+ function isSaved(s){return Boolean(state[id(s)]&&!state[id(s)].deleted)}
+ function heart(s){const on=isSaved(s);return `<button class="fav-heart" type="button" data-fav-id="${esc(id(s))}" aria-label="${on?'Remove from':'Add to'} favourites" aria-pressed="${on}" title="${on?'Remove from favourites':'Save show'}">${on?'♥':'♡'}</button>`}
+ const registry=new Map();
+ function register(s){if(id(s))registry.set(id(s),s)}
+ function updateHearts(){document.querySelectorAll('[data-fav-id]').forEach(b=>{const on=isSaved({id:b.dataset.favId});b.textContent=on?'♥':'♡';b.setAttribute('aria-pressed',String(on));b.setAttribute('aria-label',on?'Remove from favourites':'Add to favourites');b.title=on?'Remove from favourites':'Save show'})}
+ document.addEventListener('click',e=>{const b=e.target.closest('[data-fav-id]');if(!b)return;e.preventDefault();e.stopPropagation();const s=registry.get(b.dataset.favId)||state[b.dataset.favId];if(s)save(s);updateHearts()});
+ // Carry favourites between separately hosted pages when navigating via their links.
+ function encode(){try{return btoa(unescape(encodeURIComponent(JSON.stringify(state))))}catch(e){return ''}}
+ function importHash(){const m=location.hash.match(/(?:^#|&)o2f=([^&]+)/);if(!m)return;try{const incoming=JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));for(const [key,v] of Object.entries(incoming)){if(v&&v.id&&(!state[key]||Number(v.updated)>Number(state[key].updated)))state[key]=v}persist();history.replaceState(null,'',location.pathname+location.search+location.hash.replace(/(?:^#|&)o2f=[^&]*/,'').replace(/^&/,'#'))}catch(e){console.warn('Could not import favourites',e)}}
+ function withFavourites(url){try{const u=new URL(url,location.href);if(u.origin===location.origin)return u.href;const encoded=encode();if(encoded&&encoded.length<6000)u.hash='o2f='+encodeURIComponent(encoded);return u.href}catch(e){return url}}
+ document.addEventListener('click',e=>{const a=e.target.closest('a[href]');if(!a||e.defaultPrevented||e.ctrlKey||e.metaKey||e.shiftKey||e.altKey)return;const u=new URL(a.href,location.href);if(u.hostname.endsWith('.pages.dev')&&u.origin!==location.origin)a.href=withFavourites(a.href)},true);
+ window.addEventListener('storage',e=>{if(e.key===KEY){state=read();updateHearts();window.dispatchEvent(new Event('o2-favourites-changed'))}});
+ importHash();
+ window.O2Favourites={register,heart,save,active,isSaved,updateHearts,withFavourites,esc};
+})();
+</script><body><main class="wrap">
 <div id="heroMount"></div>
 <section id="mysteryGig" class="mysteryCard">
   <div class="eyebrow">🎲 Mystery Gig</div>
@@ -150,6 +178,7 @@ section{padding:38px 22px 0}h2{font-size:29px;margin:0 0 5px;letter-spacing:-.03
     </div>
   </div>
 </section>
+<section id="myFavourites"><h2>My Favourites ♡</h2><p class="sub">The shows you've saved, all in one place.</p><div id="favouritesList" class="favs-list" aria-live="polite"></div><p class="favs-note">Saved on this device. Use links between these pages to carry your favourites across.</p></section>
 <section id="discoverSection"><h2>Find your next gig</h2><p class="sub">Fresh shows and easy ways to discover what's coming up.</p><div class="grid" id="discoverGrid"></div></section>
 
 <section id="playSection"><h2>Play something</h2><p class="sub">Quick music challenges while you're here.</p><div class="grid" id="playGrid"></div><div class="grid" id="gamesGrid"><button class="tile gameTile" id="openWordSearch" aria-haspopup="dialog"><small>WEEKLY GAME</small><h3>Word Search</h3><p>Find this week’s artists and race the clock.</p><strong>PLAY →</strong></button><button class="tile gameTile" data-open-game="0" aria-haspopup="dialog"><small>DAILY GAME</small><h3>Guess the Song</h3><p>Decode the emojis. Name the song.</p><strong>PLAY →</strong></button><button class="tile gameTile" data-open-game="1" aria-haspopup="dialog"><small>DAILY GAME</small><h3>Guess the Artist</h3><p>Four clues. One artist. Can you name them?</p><strong>PLAY →</strong></button></div></section>
@@ -374,6 +403,14 @@ for(const id of ['quickGameDialog','wordSearchDialog'])document.getElementById(i
 window.addEventListener('storage',updateGameBadges);document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateGameBadges()});setInterval(updateGameBadges,30000);
 updateGameBadges();
 </script>
+</script><script id="favourites-backstage-render">
+(function(){
+ const root=document.getElementById('favouritesList');
+ function render(){const f=window.O2Favourites.active();if(!f.length){root.innerHTML='<div class="favs-empty"><strong>No favourites yet ♡</strong><p>Save a show using the heart on What’s On This Week, Just Announced or your quiz results.</p></div>';return}
+ const esc=window.O2Favourites.esc;
+ root.innerHTML=f.map(s=>{window.O2Favourites.register(s);const date=s.date?new Date(s.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'}):'';const art=s.image_url?`<img class="favs-img" src="${esc(s.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`:`<div class="favs-placeholder">LIVE MUSIC</div>`;return `<article class="favs-card">${art}<div class="favs-content"><div class="fav-row"><h3>${esc(s.artist)}</h3>${window.O2Favourites.heart(s)}</div><p>${esc(date)} · ${esc(s.venue||s.city)}</p>${s.ticket_url?`<a class="favs-ticket" href="${esc(s.ticket_url)}" target="_blank" rel="noopener">FIND TICKETS →</a>`:''}</div></article>`}).join('');}
+ window.addEventListener('o2-favourites-changed',render);render();
+})();
 </script></body></html>
 <script>
 window.addEventListener('message',event=>{const i=gameFrames.findIndex(frame=>frame.contentWindow===event.source);if(i<0||event.data?.type!=='daily-game-analytics')return;const game=['emoji_song','guess_artist'][i];if(event.data.game!==game||!['start','complete','win','reveal','ticket_click'].includes(event.data.event))return;track(game+'_'+event.data.event,event.data.puzzle,'Play')});
