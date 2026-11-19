@@ -122,7 +122,7 @@ async function load(){
   let rows=[],from=0,cut=new Date();cut.setDate(cut.getDate()-(DAYS_NEW-1));cut.setHours(0,0,0,0);
   const cutISO=cut.toISOString();
   while(true){
-   let url=`${SB}/rest/v1/shows?select=id,artist,city,event_date,ticket_url,event_url,image_url,venue_id,first_seen&event_date=gte.${dateOnly()}&first_seen=gte.${encodeURIComponent(cutISO)}&order=first_seen.desc&offset=${from}&limit=1000`;
+   let url=`${SB}/rest/v1/shows?status=eq.On%20sale&select=id,artist,city,event_date,ticket_url,event_url,image_url,venue_id,first_seen&event_date=gte.${dateOnly()}&first_seen=gte.${encodeURIComponent(cutISO)}&order=first_seen.desc&offset=${from}&limit=1000`;
    let r=await fetch(url,{headers:{apikey:KEY,Authorization:`Bearer ${KEY}`}});
    if(!r.ok)throw Error(await r.text());
    let x=await r.json();rows.push(...x);if(x.length<1000)break;from+=1000;
