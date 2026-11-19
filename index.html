@@ -409,9 +409,37 @@ updateGameBadges();
 <script id="favourites-backstage-render">
 (function(){
  const root=document.getElementById('favouritesList');
- function render(){const f=window.O2Favourites.active();if(!f.length){root.innerHTML='<div class="favs-empty"><strong>No favourites yet ♡</strong><p>Save a show using the heart on What’s On This Week, Just Announced or your quiz results.</p></div>';return}
  const esc=window.O2Favourites.esc;
- root.innerHTML=f.map(s=>{window.O2Favourites.register(s);const date=s.date?new Date(s.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'}):'';const art=s.image_url?`<img class="favs-img" src="${esc(s.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`:`<div class="favs-placeholder">LIVE MUSIC</div>`;return `<article class="favs-card">${art}<div class="favs-content"><div class="fav-row"><h3>${esc(s.artist)}</h3>${window.O2Favourites.heart(s)}</div><p>${esc(date)} · ${esc(s.venue||s.city)}</p>${s.ticket_url?`<a class="favs-ticket" href="${esc(s.ticket_url)}" target="_blank" rel="noopener">FIND TICKETS →</a>`:''}</div></article>`}).join('');}
+ const urlOk=u=>{try{const x=new URL(u);return ['https:','http:'].includes(x.protocol)?x.href:''}catch(e){return ''}};
+ let seq=0;
+ async function render(){
+  const run=++seq, f=window.O2Favourites.active();
+  if(!f.length){root.innerHTML='<div class="favs-empty"><strong>No favourites yet ♡</strong><p>Save a show using the heart on What’s On This Week, Just Announced or your quiz results.</p></div>';return}
+  root.innerHTML=f.map(s=>{
+   window.O2Favourites.register(s);
+   const date=s.date?new Date(s.date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'}):'';
+   const art=s.image_url?`<img class="favs-img" src="${esc(s.image_url)}" alt="" loading="lazy" onerror="this.style.display='none'">`:'<div class="favs-placeholder">LIVE MUSIC</div>';
+   const ticket=urlOk(s.ticket_url);
+   return `<article class="favs-card" data-saved-show="${esc(s.id)}">${art}<div class="favs-content"><div class="fav-row"><h3>${esc(s.artist)}</h3>${window.O2Favourites.heart(s)}</div><p>${esc(date)} · ${esc(s.venue||s.city)}</p><div class="fav-ticket-slot">${ticket?`<a class="favs-ticket" href="${esc(ticket)}" target="_blank" rel="noopener">FIND TICKETS →</a>`:'<span class="favs-note">Checking ticket link…</span>'}</div></div></article>`;
+  }).join('');
+  const missing=f.filter(s=>!urlOk(s.ticket_url));
+  await Promise.all(missing.map(async s=>{
+   try{
+    const query=new URL(SUPABASE_URL+'/rest/v1/shows');
+    query.searchParams.set('select','ticket_url,event_url');
+    query.searchParams.set('id','eq.'+s.id);
+    query.searchParams.set('limit','1');
+    const response=await fetch(query.href,{headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY}});
+    if(!response.ok)throw Error('Show lookup '+response.status);
+    const rows=await response.json();
+    if(run!==seq)return;
+    const card=[...root.querySelectorAll('[data-saved-show]')].find(el=>el.dataset.savedShow===String(s.id));
+    const slot=card?.querySelector('.fav-ticket-slot');if(!slot)return;
+    const ticket=urlOk(rows[0]?.ticket_url)||urlOk(rows[0]?.event_url);
+    slot.innerHTML=ticket?`<a class="favs-ticket" href="${esc(ticket)}" target="_blank" rel="noopener">FIND TICKETS →</a>`:'<span class="favs-note">Ticket link currently unavailable</span>';
+   }catch(e){console.warn('Favourite ticket lookup:',e);if(run===seq){const card=[...root.querySelectorAll('[data-saved-show]')].find(el=>el.dataset.savedShow===String(s.id));const slot=card?.querySelector('.fav-ticket-slot');if(slot)slot.innerHTML='<span class="favs-note">Ticket link currently unavailable</span>'}}
+  }));
+ }
  window.addEventListener('o2-favourites-changed',render);render();
 })();
 </script><script>
