@@ -108,28 +108,73 @@ h1{font-size:clamp(48px,14vw,76px);line-height:.9;letter-spacing:-.065em;margin:
 </style></head>
 <script id="favourites-core">
 (function(){
- const KEY='o2-favourite-shows-v1';
- const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&quot;'}[c]));
- function read(){try{const v=JSON.parse(localStorage.getItem(KEY)||'{}');return v&&typeof v==='object'&&!Array.isArray(v)?v:{}}catch(e){return {}}}
- let state=read();
- function persist(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){console.warn('Unable to store favourites',e)}window.dispatchEvent(new Event('o2-favourites-changed'))}
- function id(s){return String(s?.id??'').trim()}
- function record(s){return {id:id(s),artist:String(s.artist||''),city:String(s.city||''),venue:String(s.venue||s.venues?.name||''),date:String(s.event_date||s.date||'').slice(0,10),ticket_url:String(s.ticket_url||''),image_url:String(s.image_url||''),updated:Date.now()}}
- function save(s){const x=record(s);if(!x.id)return false;if(state[x.id]&&!state[x.id].deleted){state[x.id]={...state[x.id],deleted:true,updated:Date.now()}}else state[x.id]={...state[x.id],...x,deleted:false};persist();return !state[x.id].deleted}
- function active(){return Object.values(state).filter(x=>x&&!x.deleted&&x.id).sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'))}
- function isSaved(s){return Boolean(state[id(s)]&&!state[id(s)].deleted)}
- function heart(s){const on=isSaved(s);return `<button class="fav-heart" type="button" data-fav-id="${esc(id(s))}" aria-label="${on?'Remove from':'Add to'} favourites" aria-pressed="${on}" title="${on?'Remove from favourites':'Save show'}">${on?'♥':'♡'}</button>`}
- const registry=new Map();
- function register(s){if(id(s))registry.set(id(s),s)}
- function updateHearts(){document.querySelectorAll('[data-fav-id]').forEach(b=>{const on=isSaved({id:b.dataset.favId});b.textContent=on?'♥':'♡';b.setAttribute('aria-pressed',String(on));b.setAttribute('aria-label',on?'Remove from favourites':'Add to favourites');b.title=on?'Remove from favourites':'Save show'})}
- document.addEventListener('click',e=>{const b=e.target.closest('[data-fav-id]');if(!b)return;e.preventDefault();e.stopPropagation();const s=registry.get(b.dataset.favId)||state[b.dataset.favId];if(s)save(s);updateHearts()});
- function withFavourites(url){return new URL(url,location.href).href}
- window.addEventListener('storage',e=>{if(e.key===KEY){state=read();updateHearts();window.dispatchEvent(new Event('o2-favourites-changed'))}});
-
- window.O2Favourites={register,heart,save,active,isSaved,updateHearts,withFavourites,esc};
+'use strict';
+const KEY='o2-favourite-shows-v1';
+const HUB='https://backstage-5k0.pages.dev/';
+const IS_HUB=location.origin===new URL(HUB).origin;
+const ALLOWED=new Set(['https://just-announced.pages.dev','https://whatsonthisweek.pages.dev','https://amg-quiz.pages.dev']);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const id=s=>String(s?.id??'').trim();
+function read(){try{const v=JSON.parse(localStorage.getItem(KEY)||'{}');return v&&typeof v==='object'&&!Array.isArray(v)?v:{}}catch(e){return {}}}
+let state=read();
+const registry=new Map();
+function record(s){return {id:id(s),artist:String(s.artist||''),city:String(s.city||''),venue:String(s.venue||s.venues?.name||s.venue_name||''),date:String(s.event_date||s.date||'').slice(0,10),ticket_url:String(s.ticket_url||''),image_url:String(s.image_url||''),updated:Date.now()}}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){console.warn('Favourites could not be stored',e)}changed()}
+function changed(){updateHearts();window.dispatchEvent(new Event('o2-favourites-changed'))}
+function active(){return Object.values(state).filter(x=>x&&!x.deleted&&x.id).sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'))}
+function isSaved(s){return !!(state[id(s)]&&!state[id(s)].deleted)}
+function heart(s){const on=isSaved(s);return `<button class="fav-heart" type="button" data-fav-id="${esc(id(s))}" aria-label="${on?'Remove from':'Add to'} favourites" aria-pressed="${on}" title="${on?'Remove from favourites':'Save show'}">${on?'♥':'♡'}</button>`}
+function register(s){if(id(s))registry.set(id(s),s)}
+function updateHearts(){document.querySelectorAll('[data-fav-id]').forEach(b=>{const on=isSaved({id:b.dataset.favId});b.textContent=on?'♥':'♡';b.setAttribute('aria-pressed',String(on));b.setAttribute('aria-label',on?'Remove from favourites':'Add to favourites');b.title=on?'Remove from favourites':'Save show'})}
+function localSave(s,desired){const x=record(s);if(!x.id)return false;const add=typeof desired==='boolean'?desired:!isSaved(x);state[x.id]={...state[x.id],...x,deleted:!add,updated:Date.now()};persist();return add}
+function safeReturn(raw){try{const u=new URL(raw);return ALLOWED.has(u.origin)&&u.protocol==='https:'?u:null}catch(e){return null}}
+function save(s){
+ const x=record(s);if(!x.id)return false;
+ const add=!isSaved(x);
+ if(IS_HUB)return localSave(x,add);
+ // All writes are performed on Backstage's first-party storage. This is a
+ // short top-level navigation, not an embedded third-party cookie or login.
+ const payload={action:'set',show:x,saved:add,returnTo:location.href.split('#')[0]};
+ const target=new URL(HUB);target.hash='o2fav='+encodeURIComponent(JSON.stringify(payload));
+ location.assign(target.href);
+ return add;
+}
+function withFavourites(url){return new URL(url,location.href).href}
+function handleBridge(){
+ const hash=location.hash;
+ if(IS_HUB&&hash.startsWith('#o2fav=')){
+  try{
+   const data=JSON.parse(decodeURIComponent(hash.slice(7)));
+   const back=safeReturn(data.returnTo);
+   if(back&&data.action==='set'&&data.show&&id(data.show)){
+    localSave(data.show,!!data.saved);
+    const result={id:id(data.show),saved:!!data.saved,show:record(data.show)};
+    back.hash='o2fav-result='+encodeURIComponent(JSON.stringify(result));
+    location.replace(back.href);return;
+   }
+  }catch(e){console.warn('Could not process favourite',e)}
+  history.replaceState(null,'',location.pathname+location.search);
+ }
+ if(!IS_HUB&&hash.startsWith('#o2fav-result=')){
+  try{
+   const result=JSON.parse(decodeURIComponent(hash.slice(14)));
+   if(result.show&&id(result.show))localSave(result.show,!!result.saved);
+  }catch(e){console.warn('Could not confirm favourite',e)}
+  history.replaceState(null,'',location.pathname+location.search);
+ }
+}
+handleBridge();
+document.addEventListener('click',e=>{
+ const b=e.target.closest('[data-fav-id]');if(!b)return;
+ e.preventDefault();e.stopImmediatePropagation();
+ const s=registry.get(b.dataset.favId)||state[b.dataset.favId];
+ if(s)save(s);
+},true);
+window.addEventListener('storage',e=>{if(e.key===KEY){state=read();changed()}});
+window.O2Favourites={register,heart,save,active,isSaved,updateHearts,withFavourites,esc};
 })();
 </script><body>
-<a class="backstageBack" id="backToBackstage" href="/" aria-label="Back to Backstage">← BACK TO BACKSTAGE</a>
+<button type="button" class="backstageBack" id="backToBackstage" aria-label="Back to Backstage">← BACK TO BACKSTAGE</button>
 
 <main class="app">
   <div id="quiz">
@@ -223,7 +268,7 @@ async function trackQuizEvent(eventType, extra={}){
 async function load(){
  try{
   let all=[],from=0;
-  while(true){let r=await fetch(`${SB}/rest/v1/shows?select=id,artist,city,event_date,genre,status,ticket_url,image_url,venue_id,venues(name)&event_date=gte.${new Date().toISOString().slice(0,10)}&order=event_date.asc&offset=${from}&limit=1000`,{headers:{apikey:KEY,Authorization:`Bearer ${KEY}`}});if(!r.ok)throw Error("Unable to load shows");let x=await r.json();all.push(...x);if(x.length<1000)break;from+=1000}shows=all.filter(s=>!/(cancelled|canceled)/i.test(String(s.status||"")));try{let cr=await fetch(`${SB}/rest/v1/show_content?select=show_id,image_override_url,youtube_url`,{headers:{apikey:KEY,Authorization:`Bearer ${KEY}`}});if(cr.ok){let cc=await cr.json();contentMap=Object.fromEntries(cc.map(x=>[String(x.show_id),x]));}}catch(e){}render()
+  while(true){let r=await fetch(`${SB}/rest/v1/shows?status=eq.On%20sale&select=id,artist,city,event_date,genre,status,ticket_url,image_url,venue_id,venues(name)&event_date=gte.${new Date().toISOString().slice(0,10)}&order=event_date.asc&offset=${from}&limit=1000`,{headers:{apikey:KEY,Authorization:`Bearer ${KEY}`}});if(!r.ok)throw Error("Unable to load shows");let x=await r.json();all.push(...x);if(x.length<1000)break;from+=1000}shows=all.filter(s=>!/(cancelled|canceled)/i.test(String(s.status||"")));try{let cr=await fetch(`${SB}/rest/v1/show_content?select=show_id,image_override_url,youtube_url`,{headers:{apikey:KEY,Authorization:`Bearer ${KEY}`}});if(cr.ok){let cc=await cr.json();contentMap=Object.fromEntries(cc.map(x=>[String(x.show_id),x]));}}catch(e){}render()
  }catch(e){cities.innerHTML="<span>We couldn't load shows right now. Please try again shortly.</span>"}
 }
 function render(){
