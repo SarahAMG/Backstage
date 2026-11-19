@@ -51,7 +51,7 @@ button{font:inherit}.change{border:0;background:#eaf0ff;color:var(--blue);font-w
  let state=read();
  function persist(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){console.warn('Unable to store favourites',e)}window.dispatchEvent(new Event('o2-favourites-changed'))}
  function id(s){return String(s?.id??'').trim()}
- function record(s){return {id:id(s),artist:String(s.artist||''),city:String(s.city||''),venue:String(s.venue||s.venues?.name||''),date:String(s.event_date||s.date||'').slice(0,10),ticket_url:String(s.ticket_url||''),image_url:String(s.image_url||''),updated:Date.now()}}
+ function record(s){return {id:id(s),artist:String(s.artist||''),city:String(s.city||''),venue:String(s.venue||s.venues?.name||''),date:String(s.event_date||s.date||'').slice(0,10),ticket_url:String(s.ticket_url||s.event_url||''),image_url:String(s.image_url||''),updated:Date.now()}}
  function save(s){const x=record(s);if(!x.id)return false;if(state[x.id]&&!state[x.id].deleted){state[x.id]={...state[x.id],deleted:true,updated:Date.now()}}else state[x.id]={...state[x.id],...x,deleted:false};persist();return !state[x.id].deleted}
  function active(){return Object.values(state).filter(x=>x&&!x.deleted&&x.id).sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'))}
  function isSaved(s){return Boolean(state[id(s)]&&!state[id(s)].deleted)}
@@ -112,7 +112,7 @@ function render(){
  if(!list.length){$("shows").innerHTML=`<div class="state"><strong>No new shows here yet</strong>There haven't been any newly added shows in ${esc(selected)} in the last ${DAYS_NEW} days. Try another location.</div>`;return}
  $("shows").innerHTML=list.map(s=>{
   let imageSrc=s.image_url||defaultArtistImage;let img=imageSrc?`<img class="art" src="${esc(imageSrc)}" alt="" loading="lazy" onerror="this.style.display=\'none\'">`:`<div class="fallback">${esc(s.artist||"Live music")}</div>`;
-  window.O2Favourites.register(s);return `<article class="card" data-artist="${esc(s.artist||"")}" data-city="${esc(s.city||"")}">${img}<div class="body"><div class="fav-inline"><div class="new">${esc(addedLabel(s.first_seen))}</div>${window.O2Favourites.heart(s)}</div><h2 class="artist">${esc(s.artist||"Upcoming show")}</h2><div class="meta">${eventDate(s.event_date)} · ${esc(s.city||"")}</div>${s.ticket_url?`<a class="ticket" href="${esc(s.ticket_url)}" target="_blank" rel="noopener">FIND TICKETS →</a>`:""}</div></article>`;
+  window.O2Favourites.register(s);return `<article class="card" data-artist="${esc(s.artist||"")}" data-city="${esc(s.city||"")}">${img}<div class="body"><div class="fav-inline"><div class="new">${esc(addedLabel(s.first_seen))}</div>${window.O2Favourites.heart(s)}</div><h2 class="artist">${esc(s.artist||"Upcoming show")}</h2><div class="meta">${eventDate(s.event_date)} · ${esc(s.city||"")}</div>${(s.ticket_url||s.event_url)?`<a class="ticket" href="${esc(s.ticket_url||s.event_url)}" target="_blank" rel="noopener">FIND TICKETS →</a>`:""}</div></article>`;
  }).join("");
 }
 
@@ -122,7 +122,7 @@ async function load(){
   let rows=[],from=0,cut=new Date();cut.setDate(cut.getDate()-(DAYS_NEW-1));cut.setHours(0,0,0,0);
   const cutISO=cut.toISOString();
   while(true){
-   let url=`${SB}/rest/v1/shows?select=id,artist,city,event_date,ticket_url,image_url,venue_id,first_seen&event_date=gte.${dateOnly()}&first_seen=gte.${encodeURIComponent(cutISO)}&order=first_seen.desc&offset=${from}&limit=1000`;
+   let url=`${SB}/rest/v1/shows?select=id,artist,city,event_date,ticket_url,event_url,image_url,venue_id,first_seen&event_date=gte.${dateOnly()}&first_seen=gte.${encodeURIComponent(cutISO)}&order=first_seen.desc&offset=${from}&limit=1000`;
    let r=await fetch(url,{headers:{apikey:KEY,Authorization:`Bearer ${KEY}`}});
    if(!r.ok)throw Error(await r.text());
    let x=await r.json();rows.push(...x);if(x.length<1000)break;from+=1000;
