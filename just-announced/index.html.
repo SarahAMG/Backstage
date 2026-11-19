@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Just Announced</title>
+<title>TEST - JUST ANNOUNCED</title>
 <style>
 :root{--blue:#0050ff;--bg:#f5f6fa;--text:#111;--muted:#686b73;--card:#fff;--line:#e5e7eb}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif;-webkit-font-smoothing:antialiased}
