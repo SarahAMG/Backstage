@@ -32,6 +32,7 @@ section{padding:38px 22px 0}h2{font-size:29px;margin:0 0 5px;letter-spacing:-.03
 .mysteryControls select,.mysteryControls button{font-family:Arial,sans-serif;border-radius:999px;padding:11px 14px;font-weight:800}
 .mysteryControls select{border:1px solid #d7d7d7;background:#fff;color:#111;min-width:180px;flex:1}
 .mysteryControls button{border:0;background:#0050ff;color:#fff;cursor:pointer}
+.mysteryCityTabs{display:flex;gap:8px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;padding:4px 0 12px;margin:2px 0 8px;scrollbar-width:thin}.mysteryCityTab{flex:0 0 auto;scroll-snap-align:start;border:1px solid #dce4f5;border-radius:999px;padding:11px 16px;background:#fff;color:#344054;font:800 12px Arial,sans-serif;cursor:pointer;white-space:nowrap;min-height:42px}.mysteryCityTab.active{background:#0050ff;border-color:#0050ff;color:#fff}.mysteryCityTab:focus-visible{outline:3px solid #85aaff;outline-offset:2px}.mysteryCityError{font-size:12px;color:#667085}.mysteryControls #mysteryReveal{min-height:44px}
 .mysteryResult{display:none;margin-top:16px;border-top:1px solid #ededed;padding-top:16px}
 .mysteryResult.show{display:grid;grid-template-columns:110px 1fr;gap:16px;align-items:center}
 .mysteryImage{width:110px;height:110px;object-fit:cover;border-radius:14px;background:#eee;display:block}
@@ -205,13 +206,14 @@ section{padding:38px 22px 0}h2{font-size:29px;margin:0 0 5px;letter-spacing:-.03
  window.O2Favourites={register,heart,save,active,isSaved,updateHearts,withFavourites,esc};
 })();
 </script><body><main class="wrap">
+<div class="backstageLocation" id="backstageLocation"><div><span class="locationEyebrow">YOUR BACKSTAGE</span><strong>Where are you?</strong></div><label class="locationSelectWrap"><span class="locationPin">⌖</span><select id="backstageCity" aria-label="Choose your city"><option value="All">All cities</option></select><span aria-hidden="true">⌄</span></label></div>
 <div id="heroMount"></div>
 <section id="mysteryGig" class="mysteryCard">
   <div class="eyebrow">🎲 Mystery Gig</div>
   <h2>Let us pick your next show.</h2>
-  <p>Choose your city and we’ll reveal one upcoming gig.</p>
+  <p>A surprise gig picked for your chosen city.</p>
+  <div id="mysteryCityTabs" hidden></div>
   <div class="mysteryControls">
-    <select id="mysteryCity"><option value="">Choose a city</option></select>
     <button id="mysteryReveal" type="button">REVEAL MY GIG →</button>
   </div>
   <div id="mysteryResult" class="mysteryResult">
@@ -303,8 +305,8 @@ async function load(){
  renderQuickGameCards(map);renderWordSearchCard(map);updateGameBadges();
  const hero=items.find(x=>x.id==="hero");if(hero)heroMount.innerHTML=`<div class="hero">${hero.image_url?`<img class="media" src="${esc(hero.image_url)}" alt="" style="object-position:${Number(hero.image_x??50)}% ${Number(hero.image_y??50)}%;transform:scale(${Number(hero.image_zoom??1)});transform-origin:${Number(hero.image_x??50)}% ${Number(hero.image_y??50)}%">`:""}<div class="shade"></div><div class="copy"><div class="kicker">FIND YOUR NEXT GIG</div><h1>${esc(hero.title)}</h1><p>${esc(hero.description)}</p><a class="btn" href="${esc(hero.link_url)}" data-item="hero" data-section="Hero" target="_top">${esc(hero.button_text)}</a></div></div>`;
  const groups={Discover:"discoverGrid",Play:"playGrid",Watch:"watchGrid",Vault:"vaultGrid",More:"moreGrid"};
- for(const [section,id] of Object.entries(groups)){const a=items.filter(x=>x.section===section && (section==="Discover" || x.id!=="all_shows"));
- if(section==="Discover"&&!a.some(x=>x.id==="all_shows"))a.push({id:"all_shows",section:"Discover",title:"All Shows",description:"Browse and save upcoming gigs across our venues.",button_text:"BROWSE ALL SHOWS →",link_url:"#all-shows",enabled:true,sort_order:35});
+ for(const [section,id] of Object.entries(groups)){const a=items.filter(x=>x.section===section && x.id!=="all_shows" && x.id!=="based_on_what_you_like");
+
  a.sort((x,y)=>(Number(x.sort_order)||999)-(Number(y.sort_order)||999));
  document.getElementById(id).innerHTML=a.map(x=>tile(x,["Watch","Vault","More"].includes(section))).join("");document.getElementById(id).closest("section").classList.toggle("hidden",section!=="Play"&&!a.length)}
  document.querySelectorAll("[data-item]").forEach(a=>a.addEventListener("click",()=>track("content_click",a.dataset.item,a.dataset.section)));
@@ -313,7 +315,12 @@ async function load(){
 
 
 let mysteryShows=[], mysteryLastId=null;
-const mCity=document.getElementById("mysteryCity"),mResult=document.getElementById("mysteryResult");
+const mTabs=document.getElementById("mysteryCityTabs"),mResult=document.getElementById("mysteryResult");
+const CITY_KEY='o2-backstage-city-v1';
+const locationSelect=document.getElementById('backstageCity');
+let mysterySelectedCity=localStorage.getItem(CITY_KEY)||'All';
+window.O2BackstageCity={get:()=>mysterySelectedCity,set(city){mysterySelectedCity=city||'All';localStorage.setItem(CITY_KEY,mysterySelectedCity);locationSelect.value=mysterySelectedCity;mysteryLastId=null;mResult.classList.remove('show');window.dispatchEvent(new CustomEvent('o2-city-changed',{detail:{city:mysterySelectedCity}}));}};
+locationSelect.addEventListener('change',()=>window.O2BackstageCity.set(locationSelect.value));
 function fmtMysteryDate(v){try{return new Date(v+"T12:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}catch(e){return v||""}}
 async function loadMysteryGig(){
   try{
@@ -328,16 +335,17 @@ async function loadMysteryGig(){
     }
     mysteryShows=all.filter(x=>String(x.status||"On sale").trim().toLowerCase()==="on sale" && x.ticket_url);
     const cities=[...new Set(mysteryShows.map(x=>x.city).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
-    mCity.innerHTML='<option value="">Choose a city</option>'+cities.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join("");
+    locationSelect.innerHTML='<option value="All">All cities</option>'+cities.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    if(mysterySelectedCity!=='All'&&!cities.includes(mysterySelectedCity))mysterySelectedCity='All';
+    locationSelect.value=mysterySelectedCity;
   }catch(e){
     console.warn("Mystery Gig could not load shows",e);
-    mCity.innerHTML='<option value="">Shows unavailable</option>';
+    locationSelect.innerHTML='<option value="All">All cities</option>';
   }
 }
 function revealMystery(reroll=false){
-  const city=mCity.value;
-  if(!city){mCity.focus();return}
-  let pool=mysteryShows.filter(x=>x.city===city);
+  const city=mysterySelectedCity;
+  let pool=city==="All"?mysteryShows.slice():mysteryShows.filter(x=>x.city===city);
   if(pool.length>1 && mysteryLastId) pool=pool.filter(x=>String(x.id)!==String(mysteryLastId));
   if(!pool.length)return;
   const s=pool[Math.floor(Math.random()*pool.length)];mysteryLastId=s.id;
@@ -353,12 +361,12 @@ function revealMystery(reroll=false){
   track("mystery_reveal",s.artist||"",city);
 }
 document.getElementById("mysteryReveal").addEventListener("click",()=>{
-  const city=mCity.value;
-  if(city) track("mystery_start","",city);
+  const city=mysterySelectedCity;
+  track("mystery_start","",city);
   revealMystery(false);
 });
 document.getElementById("mysteryAgain").addEventListener("click",()=>revealMystery(true));
-document.getElementById("mysteryTickets").addEventListener("click",()=>track("mystery_ticket_click",document.getElementById("mysteryArtist").textContent,mCity.value));
+document.getElementById("mysteryTickets").addEventListener("click",()=>track("mystery_ticket_click",document.getElementById("mysteryArtist").textContent,mysterySelectedCity));
 window.addEventListener("o2-favourites-changed",()=>window.O2Favourites.updateHearts());
 loadMysteryGig();
 
@@ -613,9 +621,9 @@ window.addEventListener('message',event=>{const i=gameFrames.findIndex(frame=>fr
  function renderConfig(rows){
   const byId=Object.fromEntries(rows.map(x=>[x.id,x]));
   const fav={...defaults.my_favourites,...(byId.my_favourites||{})};
-  const rec={...defaults.based_on_what_you_like,...(byId.based_on_what_you_like||{})};
-  document.getElementById('favsHomeGrid').innerHTML=[fav,rec].filter(x=>x.enabled!==false).map(x=>configCard(x,x.id)).join('');
-  document.getElementById('myFavourites').classList.toggle('hidden',fav.enabled===false&&rec.enabled===false);
+  const allShows={...defaults.all_shows,...(byId.all_shows||{}),section:'Personalise'};
+  document.getElementById('favsHomeGrid').innerHTML=[fav,allShows].filter(x=>x.enabled!==false).map(x=>configCard(x,x.id)).join('');
+  document.getElementById('myFavourites').classList.toggle('hidden',fav.enabled===false&&allShows.enabled===false);
 
  }
  async function getAll(){
@@ -716,6 +724,7 @@ window.addEventListener('message',event=>{const i=gameFrames.findIndex(frame=>fr
  const esc=window.O2Favourites.esc;
  const safe=u=>{try{const x=new URL(u);return /^https?:$/.test(x.protocol)?x.href:''}catch(e){return ''}};
  const norm=v=>String(v||'').trim().toLowerCase();
+ const localShows=all=>{const city=window.O2BackstageCity?.get()||'All';return city==='All'?all:all.filter(s=>norm(s.city)===norm(city))};
  const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
  const make=(id,title,desc,action)=>{const sec=document.createElement('section');sec.className='homeShowSection';sec.id=id;sec.innerHTML='<div class="homeShowHead"><div><h2>'+title+'</h2><p>'+desc+'</p></div><button type="button" class="homeSeeAll">See all ↗</button></div><div class="homeShowRail" aria-label="'+title+'"><div class="homeShowEmpty">Finding shows…</div></div>';sec.querySelector('.homeSeeAll').addEventListener('click',action);return sec};
  const week=make('homeThisWeek','What’s On This Week','Gigs coming up in the next seven days.',()=>location.href='/this-week.html');
@@ -727,14 +736,17 @@ window.addEventListener('message',event=>{const i=gameFrames.findIndex(frame=>fr
  function unique(items){const seen=new Set();return items.filter(s=>{const k=norm(s.artist);if(!k||seen.has(k))return false;seen.add(k);return true})}
  function card(s){window.O2Favourites.register(s);const img=safe(s.image_url);const date=new Date(s.event_date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});return '<article class="homeShowCard">'+(img?'<img class="homeShowPhoto" src="'+esc(img)+'" alt="" loading="lazy">':'<div class="homeShowPlaceholder">LIVE MUSIC</div>')+'<div class="homeShowBody"><h3>'+esc(s.artist)+'</h3><p>'+esc(date)+' · '+esc(s.venues?.name||s.city||'O2 Academy Venues')+'</p><div class="homeShowActions"><a class="homeShowTicket" href="'+esc(safe(s.ticket_url)||safe(s.event_url))+'" target="_blank" rel="noopener">VIEW SHOW ↗</a>'+window.O2Favourites.heart(s)+'</div></div></article>'}
  function fill(section,items,empty){section.querySelector('.homeShowRail').innerHTML=items.length?items.slice(0,8).map(card).join(''):'<div class="homeShowEmpty">'+empty+'</div>'}
- async function recommendations(all){const favs=window.O2Favourites.active();if(!favs.length){fill(liked,[],'Save a show using ♡ to see recommendations here.');return}const ids=new Set(favs.map(s=>String(s.id))),artists=new Set(favs.map(s=>norm(s.artist)));let genres=new Set();const savedIds=favs.map(s=>String(s.id)).filter(x=>/^\d+$/.test(x));if(savedIds.length){try{const q=new URL(SUPABASE_URL+'/rest/v1/shows');q.searchParams.set('select','id,genre');q.searchParams.set('id','in.('+savedIds.slice(0,100).join(',')+')');const r=await fetch(q,{headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY}});if(r.ok)genres=new Set((await r.json()).map(x=>norm(x.genre)).filter(Boolean))}catch(e){}}
+ async function recommendations(all){all=localShows(all);const favs=window.O2Favourites.active();if(!favs.length){fill(liked,[],'Save a show using ♡ to see recommendations here.');return}const ids=new Set(favs.map(s=>String(s.id))),artists=new Set(favs.map(s=>norm(s.artist)));let genres=new Set();const savedIds=favs.map(s=>String(s.id)).filter(x=>/^\d+$/.test(x));if(savedIds.length){try{const q=new URL(SUPABASE_URL+'/rest/v1/shows');q.searchParams.set('select','id,genre');q.searchParams.set('id','in.('+savedIds.slice(0,100).join(',')+')');const r=await fetch(q,{headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY}});if(r.ok)genres=new Set((await r.json()).map(x=>norm(x.genre)).filter(Boolean))}catch(e){}}
  const eligible=all.filter(s=>!ids.has(String(s.id))&&!artists.has(norm(s.artist)));const matches=unique(eligible.filter(s=>genres.has(norm(s.genre))).sort((a,b)=>a.event_date.localeCompare(b.event_date)));fill(liked,matches,'No matching gigs just yet. Try saving more shows.');}
- async function refresh(){try{const all=await shows(),start=today(),end=new Date(start+'T12:00:00');end.setDate(end.getDate()+7);const last=end.toISOString().slice(0,10);fill(week,unique(all.filter(s=>s.event_date>=start&&s.event_date<last).sort((a,b)=>a.event_date.localeCompare(b.event_date))),'No upcoming shows this week.');fill(announced,unique([...all].sort((a,b)=>String(b.first_seen||'').localeCompare(String(a.first_seen||''))||a.event_date.localeCompare(b.event_date))),'No new announcements available.');await recommendations(all)}catch(e){console.warn('Backstage homepage previews:',e);[week,announced,liked].forEach(sec=>fill(sec,[],'Shows are unavailable right now. Please try again later.'))}}
+ async function refresh(){try{const all=localShows(await shows()),start=today(),end=new Date(start+'T12:00:00');end.setDate(end.getDate()+7);const last=end.toISOString().slice(0,10);fill(week,unique(all.filter(s=>s.event_date>=start&&s.event_date<last).sort((a,b)=>a.event_date.localeCompare(b.event_date))),'No upcoming shows this week.');fill(announced,unique([...all].sort((a,b)=>String(b.first_seen||'').localeCompare(String(a.first_seen||''))||a.event_date.localeCompare(b.event_date))),'No new announcements available.');await recommendations(all)}catch(e){console.warn('Backstage homepage previews:',e);[week,announced,liked].forEach(sec=>fill(sec,[],'Shows are unavailable right now. Please try again later.'))}}
  // Keep full-page navigation, but remove the duplicate large homepage tiles.
  const hideTiles=()=>{discover.querySelectorAll('[data-item="just_announced"],[data-item="whats_on_this_week"]').forEach(el=>el.remove())};
  new MutationObserver(hideTiles).observe(document.getElementById('discoverGrid'),{childList:true});hideTiles();
  window.addEventListener('o2-favourites-changed',()=>shows().then(recommendations).catch(()=>{}));
+ window.addEventListener('o2-city-changed',refresh);
  refresh();
 })();
 </script>
-</body></html>
+<style id="backstage-global-location-style">
+.backstageLocation{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:18px 22px;background:#f4f7ff;border-bottom:1px solid #e1e9fa}.backstageLocation>div{display:flex;flex-direction:column;gap:3px}.locationEyebrow{font-size:10px;font-weight:900;letter-spacing:.12em;color:#0050ff}.backstageLocation strong{font-size:17px;letter-spacing:-.02em}.locationSelectWrap{display:flex;align-items:center;gap:7px;background:#fff;border:1px solid #dbe5fa;border-radius:999px;padding:0 13px;color:#0050ff;min-width:145px}.locationSelectWrap select{appearance:none;-webkit-appearance:none;background:transparent;border:0;outline:0;min-height:44px;min-width:0;width:100%;color:#0050ff;font:800 13px Arial,sans-serif;cursor:pointer}.locationPin{font-size:18px}.favs-home-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:14px!important}#myFavourites .favs-home-grid>.tile{width:100%!important;min-width:0!important;min-height:200px!important}#discoverGrid:empty{display:none}#discoverSection:has(#discoverGrid:empty){display:none}@media(max-width:650px){.backstageLocation{padding:14px 16px}.backstageLocation strong{font-size:15px}.locationSelectWrap{min-width:130px}#myFavourites .favs-home-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:9px!important}#myFavourites .favs-home-grid>.tile{aspect-ratio:auto!important;min-height:195px!important}#myFavourites .favs-home-grid .tile .copy{padding:13px!important;min-height:195px!important}#myFavourites .favs-home-grid .tile h3{font-size:clamp(18px,5vw,25px)!important}#myFavourites .favs-home-grid .tile p{font-size:11px!important}}
+</style></body></html>
