@@ -303,7 +303,7 @@ async function load(){
  renderQuickGameCards(map);renderWordSearchCard(map);updateGameBadges();
  const hero=items.find(x=>x.id==="hero");if(hero)heroMount.innerHTML=`<div class="hero">${hero.image_url?`<img class="media" src="${esc(hero.image_url)}" alt="" style="object-position:${Number(hero.image_x??50)}% ${Number(hero.image_y??50)}%;transform:scale(${Number(hero.image_zoom??1)});transform-origin:${Number(hero.image_x??50)}% ${Number(hero.image_y??50)}%">`:""}<div class="shade"></div><div class="copy"><div class="kicker">FIND YOUR NEXT GIG</div><h1>${esc(hero.title)}</h1><p>${esc(hero.description)}</p><a class="btn" href="${esc(hero.link_url)}" data-item="hero" data-section="Hero" target="_top">${esc(hero.button_text)}</a></div></div>`;
  const groups={Discover:"discoverGrid",Play:"playGrid",Watch:"watchGrid",Vault:"vaultGrid",More:"moreGrid"};
- for(const [section,id] of Object.entries(groups)){const a=items.filter(x=>x.section===section);document.getElementById(id).innerHTML=a.map(x=>tile(x,["Watch","Vault","More"].includes(section))).join("");document.getElementById(id).closest("section").classList.toggle("hidden",section!=="Play"&&!a.length)}
+ for(const [section,id] of Object.entries(groups)){const a=items.filter(x=>x.section===section && x.id!=="all_shows");document.getElementById(id).innerHTML=a.map(x=>tile(x,["Watch","Vault","More"].includes(section))).join("");document.getElementById(id).closest("section").classList.toggle("hidden",section!=="Play"&&!a.length)}
  document.querySelectorAll("[data-item]").forEach(a=>a.addEventListener("click",()=>track("content_click",a.dataset.item,a.dataset.section)));
  track("page_view");
 }
