@@ -166,6 +166,22 @@ section{padding:38px 22px 0}h2{font-size:29px;margin:0 0 5px;letter-spacing:-.03
 .fav-heart[aria-pressed="true"]{color:#e6007e!important;background:#fff0f7!important;border-color:#f4b4d4!important}
 /* Keep the blue tiles consistent with the other image-led discovery cards */
 .favs-home-grid .tile:not(:has(img)){background:#0050ff!important;background-image:none!important}
+</style><style id="backstage-mobile-favourites-polish">
+/* Full-width, readable discovery tiles on narrow iPhone/Android viewports. */
+@media(max-width:680px){
+ #myFavourites .favs-home-grid{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:14px!important}
+ #myFavourites .favs-home-grid>.tile{width:100%!important;min-width:0!important;min-height:225px!important;height:auto!important;aspect-ratio:1.55!important;border-radius:22px!important;overflow:hidden!important;position:relative!important}
+ #myFavourites .favs-home-grid .tile .copy{width:100%!important;max-width:100%!important;padding:23px!important;display:flex!important;flex-direction:column!important;align-items:flex-start!important;justify-content:flex-end!important;min-height:225px!important;box-sizing:border-box!important;position:relative!important;z-index:2!important}
+ #myFavourites .favs-home-grid .tile h3{font-size:clamp(24px,7vw,34px)!important;line-height:1.08!important;letter-spacing:-.03em!important;max-width:95%!important;overflow-wrap:break-word!important}
+ #myFavourites .favs-home-grid .tile p{font-size:13px!important;line-height:1.4!important;max-width:95%!important}
+ #myFavourites .favs-home-grid .tile .arrow{font-size:11px!important;max-width:100%!important;white-space:normal!important;line-height:1.25!important}
+ #myFavourites .favs-home-grid .tile img.media{width:100%!important;height:100%!important;object-fit:cover!important;position:absolute!important;inset:0!important}
+ #favouritesDialog .favs-dialog-hero,#recommendationsDialog .favs-dialog-hero{padding:30px 22px!important;min-height:0!important}
+ #favouritesDialog .favs-dialog-hero h2,#recommendationsDialog .favs-dialog-hero h2{font-size:clamp(30px,9vw,45px)!important;line-height:1.05!important;overflow-wrap:break-word!important}
+ #favouritesDialog .favs-dialog-body,#recommendationsDialog .favs-dialog-body{padding:20px 16px 40px!important}
+ #recommendationsDialog .fav-rec-grid{grid-template-columns:minmax(0,1fr)!important}
+}
+@media(max-width:380px){#myFavourites .favs-home-grid .tile .copy{padding:18px!important}#myFavourites .favs-home-grid .tile h3{font-size:25px!important}}
 </style></head><script id="favourites-core">
 (function(){
  const KEY='o2-favourite-shows-v1';
