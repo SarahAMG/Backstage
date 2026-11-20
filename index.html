@@ -303,7 +303,10 @@ async function load(){
  renderQuickGameCards(map);renderWordSearchCard(map);updateGameBadges();
  const hero=items.find(x=>x.id==="hero");if(hero)heroMount.innerHTML=`<div class="hero">${hero.image_url?`<img class="media" src="${esc(hero.image_url)}" alt="" style="object-position:${Number(hero.image_x??50)}% ${Number(hero.image_y??50)}%;transform:scale(${Number(hero.image_zoom??1)});transform-origin:${Number(hero.image_x??50)}% ${Number(hero.image_y??50)}%">`:""}<div class="shade"></div><div class="copy"><div class="kicker">FIND YOUR NEXT GIG</div><h1>${esc(hero.title)}</h1><p>${esc(hero.description)}</p><a class="btn" href="${esc(hero.link_url)}" data-item="hero" data-section="Hero" target="_top">${esc(hero.button_text)}</a></div></div>`;
  const groups={Discover:"discoverGrid",Play:"playGrid",Watch:"watchGrid",Vault:"vaultGrid",More:"moreGrid"};
- for(const [section,id] of Object.entries(groups)){const a=items.filter(x=>x.section===section && x.id!=="all_shows");document.getElementById(id).innerHTML=a.map(x=>tile(x,["Watch","Vault","More"].includes(section))).join("");document.getElementById(id).closest("section").classList.toggle("hidden",section!=="Play"&&!a.length)}
+ for(const [section,id] of Object.entries(groups)){const a=items.filter(x=>x.section===section && (section==="Discover" || x.id!=="all_shows"));
+ if(section==="Discover"&&!a.some(x=>x.id==="all_shows"))a.push({id:"all_shows",section:"Discover",title:"All Shows",description:"Browse and save upcoming gigs across our venues.",button_text:"BROWSE ALL SHOWS →",link_url:"#all-shows",enabled:true,sort_order:35});
+ a.sort((x,y)=>(Number(x.sort_order)||999)-(Number(y.sort_order)||999));
+ document.getElementById(id).innerHTML=a.map(x=>tile(x,["Watch","Vault","More"].includes(section))).join("");document.getElementById(id).closest("section").classList.toggle("hidden",section!=="Play"&&!a.length)}
  document.querySelectorAll("[data-item]").forEach(a=>a.addEventListener("click",()=>track("content_click",a.dataset.item,a.dataset.section)));
  track("page_view");
 }
@@ -613,16 +616,7 @@ window.addEventListener('message',event=>{const i=gameFrames.findIndex(frame=>fr
   const rec={...defaults.based_on_what_you_like,...(byId.based_on_what_you_like||{})};
   document.getElementById('favsHomeGrid').innerHTML=[fav,rec].filter(x=>x.enabled!==false).map(x=>configCard(x,x.id)).join('');
   document.getElementById('myFavourites').classList.toggle('hidden',fav.enabled===false&&rec.enabled===false);
-  const x={...defaults.all_shows,...(byId.all_shows||{})};
-  document.getElementById('allShowsTile')?.remove();
-  if(x.enabled!==false){
-   const template=document.createElement('template');template.innerHTML=configCard(x,'all_shows').trim();
-   const tile=template.content.firstElementChild;tile.id='allShowsTile';
-   const grid=document.getElementById('discoverGrid');
-   const existing=[...grid.children];
-   const index=existing.findIndex(el=>el.querySelector('[data-item="whats_on_this_week"]')||el.matches('[data-item="whats_on_this_week"]'));
-   if(index>=0)grid.insertBefore(tile,existing[index]);else grid.appendChild(tile);
-  }
+
  }
  async function getAll(){
   if(loaded)return all;
@@ -675,6 +669,8 @@ window.addEventListener('message',event=>{const i=gameFrames.findIndex(frame=>fr
   }catch(e){grid.innerHTML='<div class="fav-rec-status">Could not load shows right now. Close this view and reopen it to retry.</div>'}
  }
  document.addEventListener('click',e=>{
+  const allShowsLink=e.target.closest('[data-item="all_shows"]');
+  if(allShowsLink){e.preventDefault();openAll();return;}
   const trigger=e.target.closest('[data-backstage-open]');
   if(trigger){
    e.preventDefault();
@@ -702,4 +698,12 @@ window.addEventListener('message',event=>{const i=gameFrames.findIndex(frame=>fr
 </script>
 
 
-<style id="all-shows-tile-match">#discoverGrid>button#allShowsTile{display:block;appearance:none;text-align:left;font:inherit;cursor:pointer;width:100%;min-width:0}#discoverGrid>button#allShowsTile .copy{width:100%}</style></body></html>
+<style id="all-shows-tile-match">#discoverGrid>button#allShowsTile{display:block;appearance:none;text-align:left;font:inherit;cursor:pointer;width:100%;min-width:0}#discoverGrid>button#allShowsTile .copy{width:100%}</style><style id="ios-all-shows-stability">
+#discoverGrid>[data-item="all_shows"]{box-sizing:border-box;flex-shrink:0;min-width:0;width:100%;-webkit-tap-highlight-color:transparent}
+#discoverGrid>[data-item="all_shows"] .copy{position:relative;z-index:2;min-width:0;width:100%;box-sizing:border-box}
+#discoverGrid>[data-item="all_shows"] .media{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#allShowsDialog{max-width:100vw;max-height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#allShowsDialog .favs-dialog-shell{min-width:0;max-width:100%;box-sizing:border-box}
+#allShowsDialog .favs-dialog-body{min-width:0;overflow-wrap:anywhere}
+@media(max-width:650px){#discoverGrid>[data-item="all_shows"]{width:82%;min-width:82%;max-width:82%;scroll-snap-align:start}#allShowsDialog .fav-rec-grid{grid-template-columns:minmax(0,1fr)}}
+</style></body></html>
