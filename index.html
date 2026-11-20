@@ -614,13 +614,9 @@ window.addEventListener('message',event=>{const i=gameFrames.findIndex(frame=>fr
   document.getElementById('favsHomeGrid').innerHTML=[fav,rec].map(x=>configCard(x,x.id)).join('');
   document.getElementById('myFavourites').classList.remove('hidden');
   const x={...defaults.all_shows,...(byId.all_shows||{})};
-  document.getElementById('allShowsTile')?.remove();
-  {
-   const holder=document.createElement('div');
-   holder.id='allShowsTile';
-   holder.innerHTML=configCard(x,'all_shows');
-   document.getElementById('discoverGrid').appendChild(holder);
-  }
+  let holder=document.getElementById('allShowsTile');
+  if(!holder){holder=document.createElement('div');holder.id='allShowsTile';document.getElementById('discoverGrid').appendChild(holder)}
+  holder.innerHTML=configCard(x,'all_shows');
  }
  async function getAll(){
   if(loaded)return all;
@@ -670,17 +666,19 @@ window.addEventListener('message',event=>{const i=gameFrames.findIndex(frame=>fr
    city.innerHTML='<option value="">All locations</option>'+cities.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');
    genre.innerHTML='<option value="">All genres</option>'+genres.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');
    render();
-  }catch(e){grid.innerHTML='<div class="fav-rec-status">Could not load shows right now. Please try again.</div>'}
+  }catch(e){grid.innerHTML='<div class="fav-rec-status">Could not load shows right now. Close this view and reopen it to retry.</div>'}
  }
  document.addEventListener('click',e=>{
   const trigger=e.target.closest('[data-backstage-open]');
   if(trigger){
+   e.preventDefault();
    const kind=trigger.dataset.backstageOpen;
    if(kind==='my_favourites')document.getElementById('openFavourites')?.click();
    if(kind==='based_on_what_you_like')document.getElementById('openRecommendations')?.click();
    if(kind==='all_shows')openAll();
   }
-  if(e.target.closest('[data-open-all-shows]'))openAll();
+  if(e.target.closest('[data-open-all-shows]')){e.preventDefault();openAll();}
+  const link=e.target.closest('a[href="#all-shows"],a[href="#allshows"]');if(link){e.preventDefault();openAll();}
  });
  document.getElementById('closeAllShows').addEventListener('click',()=>dialog.close());
  [city,genre,search].forEach(el=>el.addEventListener(el===search?'input':'change',()=>render()));
@@ -697,23 +695,5 @@ window.addEventListener('message',event=>{const i=gameFrames.findIndex(frame=>fr
 })();
 </script>
 
-<script id="backstage-all-shows-navigation-fix">
-(function(){
- function open(){const el=document.querySelector('[data-backstage-open="all_shows"]');if(el){el.click();return true}return false}
- document.addEventListener('click',function(e){
-  const target=e.target.closest('a,button,[role="button"]');if(!target)return;
-  const href=target.getAttribute('href')||'';
-  const title=(target.textContent||'').trim().toLowerCase();
-  if(target.dataset.backstageOpen==='all_shows')return;
-  if(href==='#all-shows'||href==='#allshows'||(title.includes('all shows')&&target.closest('#discoverGrid'))){e.preventDefault();e.stopImmediatePropagation();open()}
- },true);
- const normalize=()=>{
-  document.querySelectorAll('button,a,[role="button"]').forEach(el=>{
-   for(const node of el.childNodes){if(node.nodeType===3&&/back\s+to\s+backstage/i.test(node.textContent))node.textContent=node.textContent.replace(/back\s+to\s+backstage/gi,'Back')}
-  });
- };
- normalize();
- let busy=false;new MutationObserver(()=>{if(busy)return;busy=true;normalize();busy=false}).observe(document.body,{childList:true,subtree:true});
-})();
-</script>
+
 </body></html>
