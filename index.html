@@ -345,7 +345,7 @@ async function loadMysteryGig(){
 }
 function revealMystery(reroll=false){
   const city=mysterySelectedCity;
-  let pool=city==="All"?mysteryShows.slice():mysteryShows.filter(x=>x.city===city);
+  let pool=city==="All"?mysteryShows.slice():mysteryShows.filter(x=>String(x.city||'').trim().toLowerCase()===String(city).trim().toLowerCase());
   if(pool.length>1 && mysteryLastId) pool=pool.filter(x=>String(x.id)!==String(mysteryLastId));
   if(!pool.length)return;
   const s=pool[Math.floor(Math.random()*pool.length)];mysteryLastId=s.id;
@@ -738,12 +738,13 @@ window.addEventListener('message',event=>{const i=gameFrames.findIndex(frame=>fr
  function fill(section,items,empty){section.querySelector('.homeShowRail').innerHTML=items.length?items.slice(0,8).map(card).join(''):'<div class="homeShowEmpty">'+empty+'</div>'}
  async function recommendations(all){all=localShows(all);const favs=window.O2Favourites.active();if(!favs.length){fill(liked,[],'Save a show using ♡ to see recommendations here.');return}const ids=new Set(favs.map(s=>String(s.id))),artists=new Set(favs.map(s=>norm(s.artist)));let genres=new Set();const savedIds=favs.map(s=>String(s.id)).filter(x=>/^\d+$/.test(x));if(savedIds.length){try{const q=new URL(SUPABASE_URL+'/rest/v1/shows');q.searchParams.set('select','id,genre');q.searchParams.set('id','in.('+savedIds.slice(0,100).join(',')+')');const r=await fetch(q,{headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY}});if(r.ok)genres=new Set((await r.json()).map(x=>norm(x.genre)).filter(Boolean))}catch(e){}}
  const eligible=all.filter(s=>!ids.has(String(s.id))&&!artists.has(norm(s.artist)));const matches=unique(eligible.filter(s=>genres.has(norm(s.genre))).sort((a,b)=>a.event_date.localeCompare(b.event_date)));fill(liked,matches,'No matching gigs just yet. Try saving more shows.');}
- async function refresh(){try{const all=localShows(await shows()),start=today(),end=new Date(start+'T12:00:00');end.setDate(end.getDate()+7);const last=end.toISOString().slice(0,10);fill(week,unique(all.filter(s=>s.event_date>=start&&s.event_date<last).sort((a,b)=>a.event_date.localeCompare(b.event_date))),'No upcoming shows this week.');fill(announced,unique([...all].sort((a,b)=>String(b.first_seen||'').localeCompare(String(a.first_seen||''))||a.event_date.localeCompare(b.event_date))),'No new announcements available.');await recommendations(all)}catch(e){console.warn('Backstage homepage previews:',e);[week,announced,liked].forEach(sec=>fill(sec,[],'Shows are unavailable right now. Please try again later.'))}}
+ let refreshVersion=0;
+ async function refresh(){const version=++refreshVersion;try{const all=localShows(await shows());if(version!==refreshVersion)return;const start=today(),end=new Date(start+'T12:00:00');end.setDate(end.getDate()+7);const last=end.toISOString().slice(0,10);fill(week,unique(all.filter(s=>s.event_date>=start&&s.event_date<last).sort((a,b)=>a.event_date.localeCompare(b.event_date))),'No upcoming shows this week.');fill(announced,unique([...all].sort((a,b)=>String(b.first_seen||'').localeCompare(String(a.first_seen||''))||a.event_date.localeCompare(b.event_date))),'No new announcements available.');await recommendations(all)}catch(e){if(version!==refreshVersion)return;console.warn('Backstage homepage previews:',e);[week,announced,liked].forEach(sec=>fill(sec,[],'Shows are unavailable right now. Please try again later.'))}}
  // Keep full-page navigation, but remove the duplicate large homepage tiles.
  const hideTiles=()=>{discover.querySelectorAll('[data-item="just_announced"],[data-item="whats_on_this_week"]').forEach(el=>el.remove())};
  new MutationObserver(hideTiles).observe(document.getElementById('discoverGrid'),{childList:true});hideTiles();
  window.addEventListener('o2-favourites-changed',()=>shows().then(recommendations).catch(()=>{}));
- window.addEventListener('o2-city-changed',refresh);
+ window.addEventListener('o2-city-changed',()=>{[week,announced,liked].forEach(sec=>sec.querySelector('.homeShowRail').innerHTML='<div class="homeShowEmpty">Finding shows for your city…</div>');refresh()});
  refresh();
 })();
 </script>
