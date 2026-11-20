@@ -501,6 +501,7 @@ window.addEventListener('message',event=>{const i=gameFrames.findIndex(frame=>fr
 </script>
 <script id="favourites-dialog-controls">(function(){const dialog=document.getElementById('favouritesDialog'),open=document.getElementById('openFavourites'),close=document.getElementById('closeFavourites'),count=document.getElementById('favouritesCount');if(!dialog||!open)return;function update(){const n=window.O2Favourites?.active()?.length||0;if(count)count.textContent=n+' saved '+(n===1?'show':'shows')}open.addEventListener('click',()=>{update();dialog.showModal();close.focus()});close.addEventListener('click',()=>dialog.close());dialog.addEventListener('close',()=>open.focus());window.addEventListener('o2-favourites-changed',update);update()})();</script>
 <script id="favourites-personalised-recommendations">
+const SUPABASE_URL="https://jiigtmxfepthdeorlnmv.supabase.co",SUPABASE_KEY="sb_publishable_N37lWnFWPnDIRd7QBOEVpw_r13WPTyQ";
 (function(){
  const root=document.getElementById('favRecResults'), citySelect=document.getElementById('favRecCity'), refresh=document.getElementById('favRecRefresh'), dialog=document.getElementById('recommendationsDialog');
  if(!root||!window.O2Favourites)return;
@@ -590,6 +591,7 @@ window.addEventListener('message',event=>{const i=gameFrames.findIndex(frame=>fr
 @media(max-width:650px){.favs-home-grid{gap:10px}.favs-home-grid .tile{min-height:235px}.favs-home-grid .tile .copy{padding:16px}.favs-home-grid .tile h3{font-size:clamp(19px,5vw,26px)}.favs-home-grid .tile p{font-size:12px}.favs-home-grid .tile .arrow{font-size:10px;padding:10px}.all-shows-tools{grid-template-columns:1fr 1fr}.all-shows-tools input{grid-column:1/-1}}
 </style>
 <script id="backstage-discovery-expansion">
+const SUPABASE_URL="https://jiigtmxfepthdeorlnmv.supabase.co",SUPABASE_KEY="sb_publishable_N37lWnFWPnDIRd7QBOEVpw_r13WPTyQ";
 (function(){
  const defaults={
  my_favourites:{id:'my_favourites',section:'Personalise',title:'My Favourites ♥',description:"Every gig you've got your eye on.",button_text:'OPEN FAVOURITES →',enabled:true},
@@ -693,6 +695,26 @@ window.addEventListener('message',event=>{const i=gameFrames.findIndex(frame=>fr
   }catch{renderConfig([])}
  }
  loadConfig();
+})();
+</script>
+
+<script id="backstage-all-shows-navigation-fix">
+(function(){
+ function open(){const el=document.querySelector('[data-backstage-open="all_shows"]');if(el){el.click();return true}return false}
+ document.addEventListener('click',function(e){
+  const target=e.target.closest('a,button,[role="button"]');if(!target)return;
+  const href=target.getAttribute('href')||'';
+  const title=(target.textContent||'').trim().toLowerCase();
+  if(target.dataset.backstageOpen==='all_shows')return;
+  if(href==='#all-shows'||href==='#allshows'||(title.includes('all shows')&&target.closest('#discoverGrid'))){e.preventDefault();e.stopImmediatePropagation();open()}
+ },true);
+ const normalize=()=>{
+  document.querySelectorAll('button,a,[role="button"]').forEach(el=>{
+   for(const node of el.childNodes){if(node.nodeType===3&&/back\s+to\s+backstage/i.test(node.textContent))node.textContent=node.textContent.replace(/back\s+to\s+backstage/gi,'Back')}
+  });
+ };
+ normalize();
+ let busy=false;new MutationObserver(()=>{if(busy)return;busy=true;normalize();busy=false}).observe(document.body,{childList:true,subtree:true});
 })();
 </script>
 </body></html>
