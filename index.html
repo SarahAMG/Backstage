@@ -605,18 +605,24 @@ window.addEventListener('message',event=>{const i=gameFrames.findIndex(frame=>fr
   const image=safeUrl(x.image_url);
   const posX=Number(x.image_x??50),posY=Number(x.image_y??50),zoom=Number(x.image_zoom??1);
   const media=image?`<img class="media" src="${esc(image)}" alt="" style="object-position:${posX}% ${posY}%;transform:scale(${zoom});transform-origin:${posX}% ${posY}%">`:'';
-  return `<button type="button" class="tile" data-backstage-open="${kind}">${media}<div class="shade"></div><div class="copy"><small>${esc(x.section)}</small><h3>${esc(x.title)}</h3><p>${esc(x.description)}</p><span class="arrow">${esc(x.button_text)}</span></div></button>`;
+  return `<button type="button" class="tile" data-backstage-open="${kind}">${media}<div class="shade"></div><div class="copy"><small>${esc(x.section)}</small><h3>${esc(x.title)}</h3><p>${esc(x.description)}</p><div class="arrow">${esc(x.button_text)}</div></div></button>`;
  }
  function renderConfig(rows){
   const byId=Object.fromEntries(rows.map(x=>[x.id,x]));
   const fav={...defaults.my_favourites,...(byId.my_favourites||{})};
   const rec={...defaults.based_on_what_you_like,...(byId.based_on_what_you_like||{})};
-  document.getElementById('favsHomeGrid').innerHTML=[fav,rec].map(x=>configCard(x,x.id)).join('');
-  document.getElementById('myFavourites').classList.remove('hidden');
+  document.getElementById('favsHomeGrid').innerHTML=[fav,rec].filter(x=>x.enabled!==false).map(x=>configCard(x,x.id)).join('');
+  document.getElementById('myFavourites').classList.toggle('hidden',fav.enabled===false&&rec.enabled===false);
   const x={...defaults.all_shows,...(byId.all_shows||{})};
-  let holder=document.getElementById('allShowsTile');
-  if(!holder){holder=document.createElement('div');holder.id='allShowsTile';document.getElementById('discoverGrid').appendChild(holder)}
-  holder.innerHTML=configCard(x,'all_shows');
+  document.getElementById('allShowsTile')?.remove();
+  if(x.enabled!==false){
+   const template=document.createElement('template');template.innerHTML=configCard(x,'all_shows').trim();
+   const tile=template.content.firstElementChild;tile.id='allShowsTile';
+   const grid=document.getElementById('discoverGrid');
+   const existing=[...grid.children];
+   const index=existing.findIndex(el=>el.querySelector('[data-item="whats_on_this_week"]')||el.matches('[data-item="whats_on_this_week"]'));
+   if(index>=0)grid.insertBefore(tile,existing[index]);else grid.appendChild(tile);
+  }
  }
  async function getAll(){
   if(loaded)return all;
@@ -696,4 +702,4 @@ window.addEventListener('message',event=>{const i=gameFrames.findIndex(frame=>fr
 </script>
 
 
-</body></html>
+<style id="all-shows-tile-match">#discoverGrid>button#allShowsTile{display:block;appearance:none;text-align:left;font:inherit;cursor:pointer;width:100%;min-width:0}#discoverGrid>button#allShowsTile .copy{width:100%}</style></body></html>
