@@ -151,6 +151,21 @@ section{padding:38px 22px 0}h2{font-size:29px;margin:0 0 5px;letter-spacing:-.03
 .favs-rec-entry .favs-entry-title{font-size:clamp(25px,3.4vw,35px)}
 #recommendationsDialog .fav-rec-section{margin-top:0;padding-top:0;border:0}
 @media(max-width:650px){.favs-home-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.favs-home-grid .favs-entry{min-height:225px}.favs-home-grid .favs-entry-inner{padding:16px}.favs-home-grid .favs-entry-title{font-size:clamp(20px,5vw,28px)}.favs-home-grid .favs-entry-description{font-size:12px}.favs-home-grid .arrow{font-size:10px;padding:10px 11px}}
+</style><style id="backstage-colour-and-navigation-fixes">
+/* O2 blue, no gradient or decorative heart in full-screen headers */
+#favouritesDialog .favs-dialog-hero,
+#recommendationsDialog .favs-dialog-hero,
+#allShowsDialog .favs-dialog-hero{background:#0050ff!important;background-image:none!important;color:#fff!important}
+#favouritesDialog .favs-dialog-hero::after,
+#recommendationsDialog .favs-dialog-hero::after,
+#allShowsDialog .favs-dialog-hero::after{content:none!important;display:none!important}
+#favouritesDialog .favs-dialog-hero h2 span,
+#recommendationsDialog .favs-dialog-hero h2 span,
+#allShowsDialog .favs-dialog-hero h2 span{color:#fff!important}
+/* Saved heart uses pink, while unsaved stays O2 blue */
+.fav-heart[aria-pressed="true"]{color:#e6007e!important;background:#fff0f7!important;border-color:#f4b4d4!important}
+/* Keep the blue tiles consistent with the other image-led discovery cards */
+.favs-home-grid .tile:not(:has(img)){background:#0050ff!important;background-image:none!important}
 </style></head><script id="favourites-core">
 (function(){
  const KEY='o2-favourite-shows-v1';
@@ -563,7 +578,7 @@ window.addEventListener('message',event=>{const i=gameFrames.findIndex(frame=>fr
  const defaults={
  my_favourites:{id:'my_favourites',section:'Personalise',title:'My Favourites ♥',description:"Every gig you've got your eye on.",button_text:'OPEN FAVOURITES →',enabled:true},
  based_on_what_you_like:{id:'based_on_what_you_like',section:'Personalise',title:'Based on what you like ✨',description:'Discover more gigs that match your music taste.',button_text:'FIND YOUR NEXT GIG →',enabled:true},
- all_shows:{id:'all_shows',section:'Discover',title:'All Shows',description:'Explore upcoming gigs across our venues.',button_text:'BROWSE ALL SHOWS →',enabled:true}
+ all_shows:{id:'all_shows',section:'Discover',title:'All Shows',description:'Browse and save upcoming gigs across our venues.',button_text:'BROWSE ALL SHOWS →',enabled:true}
  };
  const esc=window.O2Favourites.esc;
  const safeUrl=u=>{try{const x=new URL(u);return /^https?:$/.test(x.protocol)?x.href:''}catch{return ''}};
@@ -584,7 +599,12 @@ window.addEventListener('message',event=>{const i=gameFrames.findIndex(frame=>fr
   document.getElementById('myFavourites').classList.toggle('hidden',fav.enabled===false&&rec.enabled===false);
   const x={...defaults.all_shows,...(byId.all_shows||{})};
   document.getElementById('allShowsTile')?.remove();
-  if(x.enabled!==false){const holder=document.createElement('div');holder.id='allShowsTile';holder.innerHTML=configCard(x,'all_shows');const grid=document.getElementById('discoverGrid');grid.appendChild(holder.firstElementChild);holder.replaceChildren();holder.appendChild(grid.lastElementChild);grid.appendChild(holder.firstElementChild);holder.remove();}
+  if(x.enabled!==false){
+   const holder=document.createElement('div');
+   holder.id='allShowsTile';
+   holder.innerHTML=configCard(x,'all_shows');
+   document.getElementById('discoverGrid').appendChild(holder);
+  }
  }
  async function getAll(){
   if(loaded)return all;
