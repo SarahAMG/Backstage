@@ -501,7 +501,6 @@ window.addEventListener('message',event=>{const i=gameFrames.findIndex(frame=>fr
 </script>
 <script id="favourites-dialog-controls">(function(){const dialog=document.getElementById('favouritesDialog'),open=document.getElementById('openFavourites'),close=document.getElementById('closeFavourites'),count=document.getElementById('favouritesCount');if(!dialog||!open)return;function update(){const n=window.O2Favourites?.active()?.length||0;if(count)count.textContent=n+' saved '+(n===1?'show':'shows')}open.addEventListener('click',()=>{update();dialog.showModal();close.focus()});close.addEventListener('click',()=>dialog.close());dialog.addEventListener('close',()=>open.focus());window.addEventListener('o2-favourites-changed',update);update()})();</script>
 <script id="favourites-personalised-recommendations">
-const SUPABASE_URL="https://jiigtmxfepthdeorlnmv.supabase.co",SUPABASE_KEY="sb_publishable_N37lWnFWPnDIRd7QBOEVpw_r13WPTyQ";
 (function(){
  const root=document.getElementById('favRecResults'), citySelect=document.getElementById('favRecCity'), refresh=document.getElementById('favRecRefresh'), dialog=document.getElementById('recommendationsDialog');
  if(!root||!window.O2Favourites)return;
@@ -591,7 +590,6 @@ const SUPABASE_URL="https://jiigtmxfepthdeorlnmv.supabase.co",SUPABASE_KEY="sb_p
 @media(max-width:650px){.favs-home-grid{gap:10px}.favs-home-grid .tile{min-height:235px}.favs-home-grid .tile .copy{padding:16px}.favs-home-grid .tile h3{font-size:clamp(19px,5vw,26px)}.favs-home-grid .tile p{font-size:12px}.favs-home-grid .tile .arrow{font-size:10px;padding:10px}.all-shows-tools{grid-template-columns:1fr 1fr}.all-shows-tools input{grid-column:1/-1}}
 </style>
 <script id="backstage-discovery-expansion">
-const SUPABASE_URL="https://jiigtmxfepthdeorlnmv.supabase.co",SUPABASE_KEY="sb_publishable_N37lWnFWPnDIRd7QBOEVpw_r13WPTyQ";
 (function(){
  const defaults={
  my_favourites:{id:'my_favourites',section:'Personalise',title:'My Favourites ♥',description:"Every gig you've got your eye on.",button_text:'OPEN FAVOURITES →',enabled:true},
@@ -613,11 +611,11 @@ const SUPABASE_URL="https://jiigtmxfepthdeorlnmv.supabase.co",SUPABASE_KEY="sb_p
   const byId=Object.fromEntries(rows.map(x=>[x.id,x]));
   const fav={...defaults.my_favourites,...(byId.my_favourites||{})};
   const rec={...defaults.based_on_what_you_like,...(byId.based_on_what_you_like||{})};
-  document.getElementById('favsHomeGrid').innerHTML=[fav,rec].filter(x=>x.enabled!==false).map(x=>configCard(x,x.id)).join('');
-  document.getElementById('myFavourites').classList.toggle('hidden',fav.enabled===false&&rec.enabled===false);
+  document.getElementById('favsHomeGrid').innerHTML=[fav,rec].map(x=>configCard(x,x.id)).join('');
+  document.getElementById('myFavourites').classList.remove('hidden');
   const x={...defaults.all_shows,...(byId.all_shows||{})};
   document.getElementById('allShowsTile')?.remove();
-  if(x.enabled!==false){
+  {
    const holder=document.createElement('div');
    holder.id='allShowsTile';
    holder.innerHTML=configCard(x,'all_shows');
@@ -694,6 +692,7 @@ const SUPABASE_URL="https://jiigtmxfepthdeorlnmv.supabase.co",SUPABASE_KEY="sb_p
    renderConfig(response.ok?await response.json():[]);
   }catch{renderConfig([])}
  }
+ renderConfig([]);
  loadConfig();
 })();
 </script>
