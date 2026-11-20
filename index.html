@@ -48,6 +48,24 @@ section{padding:38px 22px 0}h2{font-size:29px;margin:0 0 5px;letter-spacing:-.03
 .mysteryActions a{background:#0050ff;color:#fff}.mysteryActions button{background:#fff;color:#0050ff;border:1px solid #0050ff}
 
 
+/* Mystery Gig: responsive desktop-first refresh */
+#mysteryGig.mysteryCard{max-width:none;margin:22px 22px 0;padding:clamp(22px,3vw,38px);border:1px solid #e1e8ff;border-radius:24px;background:linear-gradient(125deg,#f5f8ff 0%,#fff 60%,#f7f4ff 100%);box-shadow:none;position:relative;overflow:hidden}
+#mysteryGig.mysteryCard:before{content:"";position:absolute;right:-65px;top:-105px;width:300px;height:300px;border:1px solid rgba(0,80,255,.10);border-radius:50%;pointer-events:none}
+#mysteryGig .eyebrow{color:#0050ff;letter-spacing:.15em;font-size:11px}
+#mysteryGig h2{font-size:clamp(27px,3vw,38px);letter-spacing:-.045em;line-height:1.08;margin:12px 0 10px;max-width:580px}
+#mysteryGig>p{font-size:15px;max-width:470px;color:#566077;margin-bottom:22px}
+#mysteryGig .mysteryControls{position:relative;z-index:1}
+#mysteryGig #mysteryReveal{padding:14px 22px;min-height:48px;font-size:12px;letter-spacing:.025em;box-shadow:0 6px 15px rgba(0,80,255,.14)}
+#mysteryGig .mysteryResult.show{grid-template-columns:clamp(120px,16vw,180px) minmax(0,1fr);gap:clamp(18px,3vw,32px);margin-top:26px;padding-top:24px;align-items:center;max-width:780px}
+#mysteryGig .mysteryImage{width:100%;height:auto;aspect-ratio:1;object-fit:cover;border-radius:18px}
+#mysteryGig .mysteryArtist{font-size:clamp(22px,2.7vw,32px);line-height:1.15;overflow-wrap:anywhere}
+#mysteryGig .mysteryMeta{font-size:14px}
+#mysteryGig .mysteryActions{gap:10px;margin-top:16px;align-items:center}
+#mysteryGig .mysteryActions a,#mysteryGig .mysteryActions button{min-height:42px;display:inline-flex;align-items:center;justify-content:center;padding:11px 17px}
+@media(min-width:900px){#mysteryGig.mysteryCard:not(:has(.mysteryResult.show)){min-height:235px}}
+@media(max-width:650px){#mysteryGig.mysteryCard{margin:16px 16px 0;padding:22px 18px;border-radius:20px}#mysteryGig h2{font-size:27px}#mysteryGig>p{font-size:14px}#mysteryGig .mysteryResult.show{grid-template-columns:90px minmax(0,1fr);gap:14px}#mysteryGig .mysteryImage{border-radius:12px}#mysteryGig .mysteryArtist{font-size:20px}#mysteryGig .mysteryActions{gap:7px}#mysteryGig .mysteryActions a,#mysteryGig .mysteryActions button{font-size:11px;padding:10px 12px}}
+@media(max-width:380px){#mysteryGig .mysteryResult.show{grid-template-columns:1fr}#mysteryGig .mysteryImage{width:120px}#mysteryGig #mysteryReveal{width:100%}}
+
 /* Weekly native word search */
 .wordSearchCard{background:#fff;border:1px solid #e8e8e8;border-radius:20px;padding:22px;margin:18px 0;box-shadow:0 4px 14px rgba(0,0,0,.035)}
 .wsTop{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}.wsTop .eyebrow{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#667085}.wsTop h2{margin:6px 0 5px;font-size:25px;color:#111}.wsTop p{margin:0;color:#555;line-height:1.45}.wsWeek{font-size:11px;font-weight:800;color:#667085;background:#f7f7f8;border-radius:999px;padding:8px 11px}
