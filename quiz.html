@@ -214,7 +214,7 @@ backToCities.onclick=()=>{
 go.onclick=findShows;
 
 const SB="https://jiigtmxfepthdeorlnmv.supabase.co", KEY="sb_publishable_N37lWnFWPnDIRd7QBOEVpw_r13WPTyQ";
-const incomingCity=(()=>{try{return new URLSearchParams(location.search).get('city')}catch(e){return null}})();
+const incomingCity=(()=>{try{const p=new URLSearchParams(location.search);return p.has('city')?p.get('city'):null}catch(e){return null}})();
 const savedQuizCity=(()=>{try{return incomingCity??localStorage.getItem('o2-backstage-city-v1')??'All'}catch(e){return incomingCity||'All'}})();
 /* The quiz may change its city temporarily; only Backstage owns the default. */
 let shows=[], selectedCities=new Set(/^(all|all cities|anywhere)$/i.test(String(savedQuizCity).trim())?["Anywhere"]:[String(savedQuizCity).trim()]), selected=new Set();
