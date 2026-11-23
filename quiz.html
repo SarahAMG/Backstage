@@ -144,7 +144,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-fav-id]');
 window.addEventListener('storage',e=>{if(e.key===KEY){state=read();changed()}if(e.key===TOKEN_KEY){token=e.newValue||'';refresh(true)}});
 window.addEventListener('focus',()=>refresh());document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
 window.O2Favourites={register,heart,save,active,isSaved,updateHearts,withFavourites:url=>url,esc,refresh};
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initUI);else initUI();
+// The optional connection panel is not displayed in the quiz UI.
 })();
 </script><body>
 <button type="button" class="backstageBack" id="backToBackstage" aria-label="Back to Backstage">← BACK TO BACKSTAGE</button>
@@ -373,6 +373,20 @@ async function hydratePreviews(){
   }
 }
 
+// Artist imagery is independent of the removed audio previews.
+async function hydrateArtistImages(){
+  const images=[...document.querySelectorAll('img[data-art-artist]')];
+  await Promise.all(images.map(async img=>{
+    const artist=img.dataset.artArtist;
+    const url=await getArtistPhoto(artist);
+    if(!url)return;
+    img.onload=()=>img.classList.add('showArt');
+    img.onerror=()=>{img.classList.remove('showArt');};
+    img.src=url;
+    if(img.complete && img.naturalWidth)img.classList.add('showArt');
+  }));
+}
+
 function renderArtistCard(g, discovery=false){
  g.shows.forEach(s=>window.O2Favourites.register(s));
  return `<article class="show" data-artist="${esc(g.artist)}"><img class="artistArt" data-art-artist="${esc(g.artist)}" alt="${esc(g.artist)}"><div class="showTop"><span class="score">${discovery?"DISCOVERY PICK":`${g.score}/${selected.size} MATCH`}</span>${g.shows.length>1?`<span class="showCount">${g.shows.length} SHOWS</span>`:""}</div><h3>${esc(g.artist)}</h3><div class="why">${discovery?"SOMETHING OUTSIDE YOUR USUAL PICKS":esc(g.reasons.join(" · "))}</div><div class="datesWrap">${g.shows.sort((a,b)=>a.event_date.localeCompare(b.event_date)).map(s=>`<div class="dateRow"><div><div class="datePlace">${esc(s.venues?.name || s.city || "")}</div><div class="dateCity">${esc(s.city||"")}</div><div class="dateWhen">${new Date(s.event_date+"T00:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}</div></div>${window.O2Favourites.heart(s)}${s.ticket_url?`<a class="miniTicket" target="_blank" rel="noopener" href="${esc(s.ticket_url)}">TICKETS →</a>`:""}</div>`).join("")}</div></article>`;
@@ -402,6 +416,7 @@ function findShows(){
  // Rotate discovery choices each time the quiz is run, without duplicating main matches.
  const discovery=[...discoveryGroups.values()].sort(()=>Math.random()-.5).slice(0,3);
  results.innerHTML=`<div class="resultTop"><button class="backLink" onclick="restartQuiz()">← Start again</button><div class="stepDots"><span></span><span></span><span class="active"></span></div></div><div class="resultHero"><div class="eyebrow">Your show vibe</div><h2>${esc(title())}</h2><p>${esc([...selected].join(" · "))}</p><div class="locationTag">📍 ${esc(any?"Anywhere":[...selectedCities].join(", "))}</div></div><div class="resultsIntro"><div><div class="eyebrow">Your matches</div><h3>Artists we think you'll love</h3></div><span>${ranked.length} picks</span></div><div class="grid">${ranked.map(g=>renderArtistCard(g)).join("")||"<div class='empty'>No strong matches this time. Try another vibe combination or choose more cities.</div>"}</div>${discovery.length?`<div class="resultsIntro" style="margin-top:34px"><div><div class="eyebrow">Explore a little more</div><h3>A little something different</h3><p style="font-size:13px;color:#747983;line-height:1.5;margin:8px 0 0">Artists outside your usual picks that you might love.</p></div><span>${discovery.length} picks</span></div><div class="grid">${discovery.map(g=>renderArtistCard(g,true)).join("")}</div>`:""}<button class="again" onclick="restartQuiz()">START AGAIN</button>`;
+ hydrateArtistImages();
  scrollTo({top:0,behavior:"smooth"});
 }
 
