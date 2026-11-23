@@ -217,7 +217,7 @@ const SB="https://jiigtmxfepthdeorlnmv.supabase.co", KEY="sb_publishable_N37lWnF
 const incomingCity=(()=>{try{return new URLSearchParams(location.search).get('city')}catch(e){return null}})();
 const savedQuizCity=(()=>{try{return incomingCity??localStorage.getItem('o2-backstage-city-v1')??'All'}catch(e){return incomingCity||'All'}})();
 /* The quiz may change its city temporarily; only Backstage owns the default. */
-let shows=[], selectedCities=new Set(savedQuizCity==='All'||savedQuizCity==='All cities'?["Anywhere"]:[savedQuizCity]), selected=new Set();
+let shows=[], selectedCities=new Set(/^(all|all cities|anywhere)$/i.test(String(savedQuizCity).trim())?["Anywhere"]:[String(savedQuizCity).trim()]), selected=new Set();
 const map={"Loud":["rock","punk","metal","alternative"],"Dreamy":["indie","shoegaze","alternative","pop"],"Chaotic":["punk","hardcore","metal","experimental"],"Nostalgic":["pop","rock","soul","indie"],"Intimate":["acoustic","folk","soul","indie"],"Euphoric":["pop","dance","electronic","house"],"Dark":["alternative","metal","electronic","r&b"],"Feel-good":["pop","funk","soul","dance"],"Discovery":["indie","alternative","experimental","folk"],"Singalong":["pop","rock","indie","punk"],"Dancey":["dance","electronic","house","pop"],"Chilled":["acoustic","soul","r&b","folk"],"High-energy":["rock","punk","dance","metal"],"Emotional":["indie","acoustic","soul","r&b"],"Weird":["experimental","alternative","electronic","indie"],"Romantic":["r&b","soul","pop","acoustic"]};
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
