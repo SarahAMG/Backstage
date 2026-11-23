@@ -361,8 +361,8 @@ let mysteryShows=[], mysteryLastId=null;
 const mTabs=document.getElementById("mysteryCityTabs"),mResult=document.getElementById("mysteryResult");
 const CITY_KEY='o2-backstage-city-v1';
 const locationSelect=document.getElementById('backstageCity');
-let mysterySelectedCity=localStorage.getItem(CITY_KEY)||'All';
-window.O2BackstageCity={get:()=>mysterySelectedCity,set(city){mysterySelectedCity=city||'All';localStorage.setItem(CITY_KEY,mysterySelectedCity);locationSelect.value=mysterySelectedCity;mysteryLastId=null;mResult.classList.remove('show');window.dispatchEvent(new CustomEvent('o2-city-changed',{detail:{city:mysterySelectedCity}}));}};
+let mysterySelectedCity=(()=>{try{return localStorage.getItem(CITY_KEY)||'All'}catch(e){return 'All'}})();
+window.O2BackstageCity={get:()=>mysterySelectedCity,set(city){mysterySelectedCity=city||'All';try{localStorage.setItem(CITY_KEY,mysterySelectedCity)}catch(e){}locationSelect.value=mysterySelectedCity;mysteryLastId=null;mResult.classList.remove('show');window.dispatchEvent(new CustomEvent('o2-city-changed',{detail:{city:mysterySelectedCity}}));}};
 locationSelect.addEventListener('change',()=>window.O2BackstageCity.set(locationSelect.value));
 function fmtMysteryDate(v){try{return new Date(v+"T12:00:00").toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}catch(e){return v||""}}
 async function loadMysteryGig(){
@@ -379,11 +379,18 @@ async function loadMysteryGig(){
     mysteryShows=all.filter(x=>String(x.status||"On sale").trim().toLowerCase()==="on sale" && x.ticket_url);
     const cities=[...new Set(mysteryShows.map(x=>x.city).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
     locationSelect.innerHTML='<option value="All">All cities</option>'+cities.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
-    if(mysterySelectedCity!=='All'&&!cities.includes(mysterySelectedCity))mysterySelectedCity='All';
+    const matchedCity=cities.find(c=>c.toLowerCase()===String(mysterySelectedCity).toLowerCase());
+    // Preserve the user's saved preference even if a city has no current on-sale shows.
+    if(mysterySelectedCity!=='All'&&!matchedCity){const opt=document.createElement('option');opt.value=mysterySelectedCity;opt.textContent=mysterySelectedCity;locationSelect.appendChild(opt)}
+    if(matchedCity)mysterySelectedCity=matchedCity;
     locationSelect.value=mysterySelectedCity;
+    locationSelect.dispatchEvent(new Event('city-options-loaded'));
   }catch(e){
     console.warn("Mystery Gig could not load shows",e);
     locationSelect.innerHTML='<option value="All">All cities</option>';
+    if(mysterySelectedCity!=='All'){const opt=document.createElement('option');opt.value=mysterySelectedCity;opt.textContent=mysterySelectedCity;locationSelect.appendChild(opt)}
+    locationSelect.value=mysterySelectedCity;
+    locationSelect.dispatchEvent(new Event('city-options-loaded'));
   }
 }
 function revealMystery(reroll=false){
@@ -853,6 +860,8 @@ const quick=document.getElementById('quickGameDialog');if(quick)new MutationObse
  menu.addEventListener('keydown',e=>{if(e.key==='Escape'){close();button.focus()}else if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const buttons=[...menu.querySelectorAll('button')];const i=buttons.indexOf(document.activeElement);buttons[(i+(e.key==='ArrowDown'?1:buttons.length-1))%buttons.length]?.focus()}});
  document.addEventListener('click',e=>{if(!e.target.closest('.cityPreference'))close()});
  document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
- native.addEventListener('change',sync);new MutationObserver(render).observe(native,{childList:true,subtree:true});render();
+ native.addEventListener('change',sync);native.addEventListener('city-options-loaded',render);new MutationObserver(render).observe(native,{childList:true,subtree:true});render();
+ // Display the saved preference immediately, before the async show list finishes loading.
+ const savedCity=window.O2BackstageCity?.get?.();if(savedCity&&savedCity!=='All'){label.textContent=savedCity;}
 })();
 </script></body></html>
