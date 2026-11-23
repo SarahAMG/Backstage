@@ -217,7 +217,14 @@ const SB="https://jiigtmxfepthdeorlnmv.supabase.co", KEY="sb_publishable_N37lWnF
 const incomingCity=(()=>{try{const p=new URLSearchParams(location.search);return p.has('city')?p.get('city'):null}catch(e){return null}})();
 const savedQuizCity=(()=>{try{return incomingCity??localStorage.getItem('o2-backstage-city-v1')??'All'}catch(e){return incomingCity||'All'}})();
 /* The quiz may change its city temporarily; only Backstage owns the default. */
-let shows=[], selectedCities=new Set(/^(all|all cities|anywhere)$/i.test(String(savedQuizCity).trim())?["Anywhere"]:[String(savedQuizCity).trim()]), selected=new Set();
+const normalCity=v=>String(v||'').trim().toLowerCase().replace(/[^a-z]/g,'');
+const incomingDefault=String(savedQuizCity||'All').trim();
+let shows=[], selectedCities=new Set(/^(all|all cities|anywhere)$/i.test(incomingDefault)?["Anywhere"]:[incomingDefault]), selected=new Set();
+function matchesSelectedCity(s){
+ if(selectedCities.has('Anywhere'))return true;
+ const city=normalCity(s.city);
+ return [...selectedCities].some(c=>normalCity(c)===city);
+}
 const map={"Loud":["rock","punk","metal","alternative"],"Dreamy":["indie","shoegaze","alternative","pop"],"Chaotic":["punk","hardcore","metal","experimental"],"Nostalgic":["pop","rock","soul","indie"],"Intimate":["acoustic","folk","soul","indie"],"Euphoric":["pop","dance","electronic","house"],"Dark":["alternative","metal","electronic","r&b"],"Feel-good":["pop","funk","soul","dance"],"Discovery":["indie","alternative","experimental","folk"],"Singalong":["pop","rock","indie","punk"],"Dancey":["dance","electronic","house","pop"],"Chilled":["acoustic","soul","r&b","folk"],"High-energy":["rock","punk","dance","metal"],"Emotional":["indie","acoustic","soul","r&b"],"Weird":["experimental","alternative","electronic","indie"],"Romantic":["r&b","soul","pop","acoustic"]};
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
@@ -245,7 +252,7 @@ async function load(){
  try{
   let all=[],from=0;
   while(true){let r=await fetch(`${SB}/rest/v1/shows?select=id,artist,city,event_date,genre,status,ticket_url,image_url,venue_id,venues(name)&event_date=gte.${new Date().toISOString().slice(0,10)}&order=event_date.asc&offset=${from}&limit=1000`,{headers:{apikey:KEY,Authorization:`Bearer ${KEY}`}});if(!r.ok)throw Error("Unable to load shows");let x=await r.json();all.push(...x);if(x.length<1000)break;from+=1000}shows=all.filter(s=>!/(cancelled|canceled)/i.test(String(s.status||"")));
-  if(!selectedCities.has('Anywhere')&&!shows.some(s=>selectedCities.has(s.city))){/* Keep saved city visible even when no gigs are available there. */}try{let cr=await fetch(`${SB}/rest/v1/show_content?select=show_id,image_override_url,youtube_url`,{headers:{apikey:KEY,Authorization:`Bearer ${KEY}`}});if(cr.ok){let cc=await cr.json();contentMap=Object.fromEntries(cc.map(x=>[String(x.show_id),x]));}}catch(e){}render()
+  if(!selectedCities.has('Anywhere')&&!shows.some(s=>matchesSelectedCity(s))){/* Keep saved city visible even when no gigs are available there. */}try{let cr=await fetch(`${SB}/rest/v1/show_content?select=show_id,image_override_url,youtube_url`,{headers:{apikey:KEY,Authorization:`Bearer ${KEY}`}});if(cr.ok){let cc=await cr.json();contentMap=Object.fromEntries(cc.map(x=>[String(x.show_id),x]));}}catch(e){}render()
  }catch(e){cities.innerHTML="<span>We couldn't load shows right now. Please try again shortly.</span>"}
 }
 function render(){
@@ -373,7 +380,7 @@ function renderArtistCard(g, discovery=false){
 
 function findShows(){
  let any=selectedCities.has("Anywhere");
- let scored=shows.filter(s=>any||selectedCities.has(s.city)).map(s=>{let g=(s.genre||"").toLowerCase(),reasons=[];selected.forEach(v=>{if(map[v].some(k=>g.includes(k)))reasons.push(v)});return{s,score:reasons.length,reasons}}).filter(x=>x.score).sort((a,b)=>b.score-a.score||a.s.event_date.localeCompare(b.s.event_date));
+ let scored=shows.filter(s=>matchesSelectedCity(s)).map(s=>{let g=(s.genre||"").toLowerCase(),reasons=[];selected.forEach(v=>{if(map[v].some(k=>g.includes(k)))reasons.push(v)});return{s,score:reasons.length,reasons}}).filter(x=>x.score).sort((a,b)=>b.score-a.score||a.s.event_date.localeCompare(b.s.event_date));
  const groups=new Map();
  scored.forEach(x=>{
    const key=normArtist(x.s.artist);
@@ -387,7 +394,7 @@ function findShows(){
  quiz.classList.add("hidden");results.classList.remove("hidden");
  const selectedArtistKeys=new Set(ranked.map(g=>normArtist(g.artist)));
  const discoveryGroups=new Map();
- shows.filter(s=>(any||selectedCities.has(s.city)) && String(s.genre||"").split(",").some(g=>g.trim().toLowerCase()==="other") && !selectedArtistKeys.has(normArtist(s.artist))).forEach(s=>{
+ shows.filter(s=>matchesSelectedCity(s) && String(s.genre||"").split(",").some(g=>g.trim().toLowerCase()==="other") && !selectedArtistKeys.has(normArtist(s.artist))).forEach(s=>{
    const key=normArtist(s.artist);
    if(!discoveryGroups.has(key))discoveryGroups.set(key,{artist:s.artist,shows:[]});
    discoveryGroups.get(key).shows.push(s);
