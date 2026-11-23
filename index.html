@@ -873,4 +873,34 @@ const quick=document.getElementById('quickGameDialog');if(quick)new MutationObse
  window.backstageCityLink=withCity;
 })();
 </script>
+
+<style id="iphone-favourites-accessibility-fix">
+@media(max-width:680px){
+ #myFavourites .favs-home-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important}
+ #myFavourites .favs-home-grid>.tile{min-height:235px!important;aspect-ratio:auto!important}
+ #myFavourites .favs-home-grid .tile .copy{padding:16px!important;min-height:235px!important;gap:9px!important}
+ #myFavourites .favs-home-grid .tile h3{font-size:clamp(22px,6.3vw,30px)!important;line-height:1.12!important}
+ #myFavourites .favs-home-grid .tile p{font-size:14px!important;line-height:1.4!important}
+ #myFavourites .favs-home-grid .tile .arrow,
+ #myFavourites .favs-home-grid .tile .copy .arrow{background:#fff!important;color:#0050ff!important;-webkit-text-fill-color:#0050ff!important;text-shadow:none!important;font-size:13px!important;line-height:1.25!important;font-weight:900!important;padding:12px 13px!important;min-height:44px!important;box-sizing:border-box!important;white-space:normal!important}
+ #myFavourites .favs-home-grid .tile .arrow *{color:#0050ff!important;-webkit-text-fill-color:#0050ff!important;text-shadow:none!important}
+}
+@media(max-width:370px){#myFavourites .favs-home-grid{grid-template-columns:1fr!important}#myFavourites .favs-home-grid>.tile{min-height:205px!important}#myFavourites .favs-home-grid .tile .copy{min-height:205px!important}}
+</style>
+<script id="quiz-city-navigation-definitive-fix">
+/* Always build the quiz URL at the moment of navigation, after the saved homepage city is current. */
+(function(){
+ function city(){try{return window.O2BackstageCity?.get?.()||localStorage.getItem('o2-backstage-city-v1')||'All'}catch(e){return 'All'}}
+ function quizUrl(){const u=new URL('https://amg-quiz.pages.dev/');u.searchParams.set('city',city());return u.href}
+ document.addEventListener('click',function(e){
+  const a=e.target.closest('a[href]');
+  if(!a)return;
+  if(a.dataset.item==='hero'||/amg-quiz\.pages\.dev|\/quiz\.html/i.test(a.getAttribute('href')||'')){
+   const url=quizUrl();a.href=url;
+   if(!e.defaultPrevented){e.preventDefault();e.stopImmediatePropagation();window.location.assign(url)}
+  }
+ },true);
+ window.addEventListener('o2-city-changed',()=>{document.querySelectorAll('a[data-item="hero"]').forEach(a=>a.href=quizUrl())});
+})();
+</script>
 </body></html>
