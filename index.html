@@ -811,6 +811,12 @@ window.addEventListener('message',event=>{const i=gameFrames.findIndex(frame=>fr
 .homeSeeAll:hover{background:#dce9ff!important;transform:translateY(-1px)}
 .homeShowTicket{border-radius:999px!important;font-weight:800!important}
 #mysteryReveal[hidden]{display:none!important}
+/* Keep the Mystery Gig recommendation close to its heading after reveal. */
+#mysteryGig:has(.mysteryResult.show)>p{margin-bottom:5px!important}
+#mysteryGig:has(.mysteryResult.show) .mysteryControls{display:none!important}
+#mysteryGig .mysteryResult.show{margin-top:10px!important;padding-top:12px!important}
+@media(max-width:650px){#mysteryGig .mysteryResult.show{margin-top:8px!important;padding-top:10px!important}}
+
 .gameArtistShows{margin:20px 0 8px;padding:20px;border:1px solid #e2e9f8;background:#f7f9ff;border-radius:20px;max-width:100%;min-width:0}
 .gameArtistShows h3{margin:0 0 4px;font-size:20px;color:#101b40}.gameArtistShows p{margin:0 0 14px;color:#64708c;font-size:13px}
 .gameArtistRail{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:10px;max-width:100%}
