@@ -778,8 +778,8 @@ window.addEventListener('message',event=>{const i=gameFrames.findIndex(frame=>fr
  const localShows=all=>{const city=window.O2BackstageCity?.get()||'All';return city==='All'?all:all.filter(s=>norm(s.city)===norm(city))};
  const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
  const make=(id,title,desc,action)=>{const sec=document.createElement('section');sec.className='homeShowSection';sec.id=id;sec.innerHTML='<div class="homeShowHead"><div><h2>'+title+'</h2><p>'+desc+'</p></div><button type="button" class="homeSeeAll">See all <svg class="uiArrowIcon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button></div><div class="homeShowRail" aria-label="'+title+'"><div class="homeShowEmpty">Finding shows…</div></div>';sec.querySelector('.homeSeeAll').addEventListener('click',action);return sec};
- const week=make('homeThisWeek','What’s On This Week','Gigs coming up in the next seven days.',()=>location.href='/this-week.html');
- const announced=make('homeJustAnnounced','Just Announced','Fresh shows worth checking out.',()=>location.href='/just-announced.html');
+ const week=make('homeThisWeek','What’s On This Week','Gigs coming up in the next seven days.',()=>location.href=window.backstageCityLink('/this-week.html'));
+ const announced=make('homeJustAnnounced','Just Announced','Fresh shows worth checking out.',()=>location.href=window.backstageCityLink('/just-announced.html'));
  const liked=make('homeBasedOnLikes','Based on what you like','Recommendations inspired by your saved shows.',()=>document.getElementById('openRecommendations')?.click());
  discover.parentNode.insertBefore(week,discover);discover.parentNode.insertBefore(announced,discover);personalise.parentNode.insertBefore(liked,discover);
  let cache=null;
@@ -864,4 +864,13 @@ const quick=document.getElementById('quickGameDialog');if(quick)new MutationObse
  // Display the saved preference immediately, before the async show list finishes loading.
  const savedCity=window.O2BackstageCity?.get?.();if(savedCity&&savedCity!=='All'){label.textContent=savedCity;}
 })();
-</script></body></html>
+</script>
+<script id="backstage-city-link-bridge">
+/* Carry the homepage preference across separately hosted Cloudflare Pages origins. */
+(function(){
+ function withCity(raw){try{const url=new URL(raw,location.href);const city=window.O2BackstageCity?.get?.()||'All';if(/(?:quiz|this-week|just-announced)\.html$/.test(url.pathname)||/^(?:amg-quiz|whatsonthisweek|just-announced)\.pages\.dev$/.test(url.hostname)){url.searchParams.set('city',city);return url.href}}catch(e){}return raw}
+ document.addEventListener('click',e=>{const a=e.target.closest('a[href]');if(a&&!e.defaultPrevented){const original=a.getAttribute('href');const next=withCity(original);if(next!==original)a.href=next}},true);
+ window.backstageCityLink=withCity;
+})();
+</script>
+</body></html>
