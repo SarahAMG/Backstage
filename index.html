@@ -346,7 +346,7 @@ async function load(){
  let rows=[];try{const r=await fetch(`${SUPABASE_URL}/rest/v1/backstage_config?select=*&order=sort_order.asc`,{headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${SUPABASE_KEY}`}});if(r.ok)rows=await r.json()}catch(e){}
  const map=Object.fromEntries(rows.map(x=>[x.id,x])),items=DEFAULTS.map(d=>({...d,...(map[d.id]||{})})).filter(x=>x.enabled!==false && x.id!=="crossword" && x.id!=="emoji_1" && x.id!=="emoji_2" && x.id!=="daily_drop" && x.id!=="this_or_that");
  renderQuickGameCards(map);renderWordSearchCard(map);updateGameBadges();
- const hero=items.find(x=>x.id==="hero");if(hero)heroMount.innerHTML=`<div class="hero">${hero.image_url?`<img class="media" src="${esc(hero.image_url)}" alt="" style="object-position:${Number(hero.image_x??50)}% ${Number(hero.image_y??50)}%;transform:scale(${Number(hero.image_zoom??1)});transform-origin:${Number(hero.image_x??50)}% ${Number(hero.image_y??50)}%">`:""}<div class="shade"></div><div class="copy"><div class="kicker">FIND YOUR NEXT GIG</div><h1>${esc(hero.title)}</h1><p>${esc(hero.description)}</p><a class="btn" href="${esc(window.backstageCityLink?.('https://amg-quiz.pages.dev/')||'https://amg-quiz.pages.dev/')}" data-item="hero" data-section="Hero" target="_top">${esc(hero.button_text)}</a></div></div>`;
+ const hero=items.find(x=>x.id==="hero")||{...DEFAULTS.find(x=>x.id==="hero"),...(map.hero||{}),enabled:true};if(hero)heroMount.innerHTML=`<div class="hero">${hero.image_url?`<img class="media" src="${esc(hero.image_url)}" alt="" style="object-position:${Number(hero.image_x??50)}% ${Number(hero.image_y??50)}%;transform:scale(${Number(hero.image_zoom??1)});transform-origin:${Number(hero.image_x??50)}% ${Number(hero.image_y??50)}%">`:""}<div class="shade"></div><div class="copy"><div class="kicker">FIND YOUR NEXT GIG</div><h1>${esc(hero.title)}</h1><p>${esc(hero.description)}</p><a class="btn" href="${esc(window.backstageCityLink?.('https://amg-quiz.pages.dev/')||'https://amg-quiz.pages.dev/')}" data-item="hero" data-section="Hero" target="_top">${esc(hero.button_text)}</a></div></div>`;
  const groups={Discover:"discoverGrid",Play:"playGrid",Watch:"watchGrid",Vault:"vaultGrid",More:"moreGrid"};
  for(const [section,id] of Object.entries(groups)){const a=items.filter(x=>x.section===section && x.id!=="all_shows" && x.id!=="based_on_what_you_like");
 
@@ -908,4 +908,17 @@ const quick=document.getElementById('quickGameDialog');if(quick)new MutationObse
 #myFavourites .favs-home-grid .tile .arrow span,#myFavourites .favs-home-grid .tile .arrow svg{color:#0050ff!important;-webkit-text-fill-color:#0050ff!important;text-shadow:none!important;flex-shrink:0!important}
 #myFavourites .favs-home-grid .tile .arrow svg{display:block!important;width:17px!important;height:17px!important;stroke:#0050ff!important}
 @media(max-width:680px){#myFavourites .favs-home-grid .tile .arrow{font-size:14px!important;padding:12px 13px!important;gap:7px!important}}
-</style></body></html>
+</style>
+<style id="mobile-favs-all-shows-balanced-2026">
+@media(max-width:680px){
+ #myFavourites .favs-home-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;align-items:stretch!important}
+ #myFavourites .favs-home-grid>.tile{box-sizing:border-box!important;min-width:0!important;width:100%!important;min-height:240px!important;height:100%!important;aspect-ratio:auto!important;display:flex!important;flex-direction:column!important;border-radius:18px!important}
+ #myFavourites .favs-home-grid>.tile .copy{box-sizing:border-box!important;display:flex!important;flex-direction:column!important;align-items:stretch!important;justify-content:flex-end!important;flex:1!important;min-height:240px!important;height:100%!important;padding:15px 12px!important;gap:7px!important}
+ #myFavourites .favs-home-grid>.tile .copy h3{font-size:clamp(19px,5.2vw,24px)!important;line-height:1.1!important;letter-spacing:-.025em!important;margin:0!important;min-height:2.2em!important;overflow-wrap:break-word!important}
+ #myFavourites .favs-home-grid>.tile .copy p{font-size:13px!important;line-height:1.32!important;margin:0 0 4px!important;min-height:3.96em!important}
+ #myFavourites .favs-home-grid>.tile .copy .arrow{box-sizing:border-box!important;align-self:stretch!important;width:100%!important;min-height:44px!important;margin-top:auto!important;display:flex!important;align-items:center!important;justify-content:center!important;gap:7px!important;font-size:13px!important;padding:10px 8px!important;white-space:nowrap!important;color:#0050ff!important;-webkit-text-fill-color:#0050ff!important;background:#fff!important;text-shadow:none!important}
+ #myFavourites .favs-home-grid>.tile .copy .arrow span{color:#0050ff!important;-webkit-text-fill-color:#0050ff!important;text-shadow:none!important}
+}
+@media(max-width:370px){#myFavourites .favs-home-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}#myFavourites .favs-home-grid>.tile .copy{padding:12px 9px!important}#myFavourites .favs-home-grid>.tile .copy h3{font-size:18px!important}#myFavourites .favs-home-grid>.tile .copy p{font-size:12px!important}}
+</style>
+</body></html>
