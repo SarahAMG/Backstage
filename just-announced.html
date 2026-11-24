@@ -81,7 +81,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-fav-id]');
 window.addEventListener('storage',e=>{if(e.key===KEY){state=read();changed()}if(e.key===TOKEN_KEY){token=e.newValue||'';refresh(true)}});
 window.addEventListener('focus',()=>refresh());document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
 window.O2Favourites={register,heart,save,active,isSaved,updateHearts,withFavourites:url=>url,esc,refresh};
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initUI);else initUI();
+// Optional connection panel hidden; favourites functionality retained.
 })();
 </script><body>
 <button type="button" class="backstageBack" id="backToBackstage" aria-label="Back">← BACK</button>
