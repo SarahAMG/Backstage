@@ -233,14 +233,7 @@ const KEY='o2-favourite-shows-v1', TOKEN_KEY='o2-favourites-private-key-v2';
 const API='https://amg-favourites.sarah-tait.workers.dev/favourites';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function read(){try{const v=JSON.parse(localStorage.getItem(KEY)||'{}');return v&&typeof v==='object'&&!Array.isArray(v)?v:{}}catch(e){return {}}}
-let state=read(),token=localStorage.getItem(TOKEN_KEY)||'',busy=Promise.resolve(),lastRefresh=0;
-const incoming=new URLSearchParams(location.hash.slice(1)).get('favkey');
-const valid=t=>/^[a-f0-9]{64}$/.test(t||'');
-const previous=token;
-if(valid(incoming)){token=incoming;history.replaceState(history.state,'',location.pathname+location.search);}
-if(!valid(token)){token=Array.from(crypto.getRandomValues(new Uint8Array(32)),x=>x.toString(16).padStart(2,'0')).join('');}
-localStorage.setItem(TOKEN_KEY,token);
-const migrationKey='o2-favourites-migrated-'+token;
+let state=read();
 const registry=new Map();
 const id=s=>String(s?.id??'').trim();
 function record(s){return {id:id(s),artist:String(s.artist||''),city:String(s.city||''),venue:String(s.venues?.name||s.venue_name||s.venue||(s.city==='Liverpool'?'O2 Academy Liverpool':'')),date:String(s.event_date||s.date||'').slice(0,10),ticket_url:String(s.ticket_url||''),image_url:String(s.image_url||'')}}
@@ -251,20 +244,14 @@ function isSaved(s){return !!(state[id(s)]&&!state[id(s)].deleted)}
 function heart(s){const on=isSaved(s);return `<button class="fav-heart" type="button" data-fav-id="${esc(id(s))}" aria-label="${on?'Remove from':'Add to'} favourites" aria-pressed="${on}" title="${on?'Remove from favourites':'Save show'}">${on?'♥':'♡'}</button>`}
 function register(s){if(!id(s))return;registry.set(id(s),s);const old=state[id(s)];if(old&&!old.deleted){const fresh=record(s);if(fresh.venue&&fresh.venue!==old.venue){state[id(s)]={...old,venue:fresh.venue};localStorage.setItem(KEY,JSON.stringify(state))}}}
 function updateHearts(){document.querySelectorAll('[data-fav-id]').forEach(b=>{const on=isSaved({id:b.dataset.favId});b.textContent=on?'♥':'♡';b.setAttribute('aria-pressed',String(on));b.setAttribute('aria-label',on?'Remove from favourites':'Add to favourites')})}
-function fromRemote(items){const next={};for(const s of items){if(!s?.id)continue;const x=record(s);next[x.id]=x}state=next;persist()}
-async function request(method,items,secret=token){const r=await fetch(API,{method,headers:{'Authorization':'Bearer '+secret,...(method==='PUT'?{'Content-Type':'application/json'}:{})},...(method==='PUT'?{body:JSON.stringify({favourites:items.map(s=>({...s,event_date:s.date||s.event_date||''}))})}:{})});if(!r.ok)throw Error('Sync failed ('+r.status+')');return r.json()}
-function warn(){const el=document.getElementById('favSyncStatus');if(el)el.textContent='Could not sync right now. Please check your connection.'}
-async function refresh(force=false){if(!token||(!force&&Date.now()-lastRefresh<3000))return;await busy;try{const data=await request('GET');fromRemote(data.favourites||[]);lastRefresh=Date.now()}catch(e){warn();console.warn(e)}}
-function save(s){const x=record(s);if(!x.id)return false;const add=!isSaved(x);state[x.id]={...x,deleted:!add};persist();if(token){const secret=token;busy=busy.catch(()=>{}).then(async()=>{try{const data=await request('GET',null,secret);const map=new Map((data.favourites||[]).map(y=>[String(y.id),y]));if(add)map.set(x.id,{...x,event_date:x.date});else map.delete(x.id);await request('PUT',[...map.values()],secret);if(secret===token){const confirmed=await request('GET',null,secret);fromRemote(confirmed.favourites||[]);lastRefresh=Date.now()}}catch(e){warn();console.warn(e)}})}return add}
+function refresh(){const next=read();if(JSON.stringify(next)!==JSON.stringify(state)){state=next;changed()}else updateHearts()}
+function save(s){state=read();const x=record(s);if(!x.id)return false;const add=!isSaved(x);state[x.id]={...x,deleted:!add};persist();return add}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-fav-id]');if(!b)return;e.preventDefault();e.stopImmediatePropagation();const s=registry.get(b.dataset.favId)||state[b.dataset.favId];if(s)save(s)},true);
-window.addEventListener('storage',e=>{if(e.key===KEY){state=read();changed()}if(e.key===TOKEN_KEY){token=e.newValue||'';refresh(true)}});
-window.addEventListener('focus',()=>refresh(true));document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
-function withFavourites(raw){const u=new URL(raw,location.href);if(u.origin==='https://amg-quiz.pages.dev'){u.hash=new URLSearchParams({favkey:token}).toString();}return u.href;}
+window.addEventListener('storage',e=>{if(e.key===KEY)refresh()});
+window.addEventListener('focus',refresh);window.addEventListener('pageshow',refresh);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
+function withFavourites(raw){return new URL(raw,location.href).href}
 window.O2Favourites={register,heart,save,active,isSaved,updateHearts,withFavourites,esc,refresh};
-busy=(async()=>{try{if(!localStorage.getItem(migrationKey)){const data=await request('GET');const map=new Map((data.favourites||[]).map(x=>[String(x.id),x]));for(const x of active())if(!map.has(x.id))map.set(x.id,x);await request('PUT',[...map.values()]);localStorage.setItem(migrationKey,'1');}}catch(e){console.warn('Favourites migration failed',e)}})();
-refresh(true);
-window.addEventListener('pageshow',()=>refresh(true));
-// The optional connection panel is not displayed in the quiz UI.
 })();
 </script><body><main class="wrap">
 <div class="backstageLocation" id="backstageLocation"><div><span class="locationEyebrow">YOUR BACKSTAGE</span><strong>Where are you?</strong></div><div class="cityPreference"><button type="button" id="cityPreferenceButton" class="cityPreferenceButton" aria-haspopup="listbox" aria-expanded="false"><span class="cityPreferenceIcon" aria-hidden="true">⌖</span><span id="cityPreferenceLabel">All cities</span><span class="cityPreferenceChevron" aria-hidden="true">⌄</span></button><div id="cityPreferenceMenu" class="cityPreferenceMenu" role="listbox" aria-label="Choose your city" hidden></div><select id="backstageCity" aria-label="Choose your city" class="cityPreferenceNative" tabindex="-1"><option value="All">All cities</option></select></div></div>
@@ -345,7 +332,7 @@ const DEFAULTS=[{"id": "hero", "section": "Hero", "title": "Find your vibe.", "d
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 async function track(event_type,item="",section=""){try{await fetch(`${SUPABASE_URL}/rest/v1/page_analytics`,{method:"POST",headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${SUPABASE_KEY}`,"Content-Type":"application/json",Prefer:"return=minimal"},body:JSON.stringify({page_name:"backstage",event_type,artist:item||null,city:section||null,venue:item||null})})}catch(e){}}
 function localPageUrl(x){
- const links={hero:'https://amg-quiz.pages.dev/',just_announced:'/just-announced.html',whats_on_this_week:'/this-week.html'};
+ const links={hero:'/quiz.html',just_announced:'/just-announced.html',whats_on_this_week:'/this-week.html'};
  return links[x.id]||String(x.link_url||'#');
 }
 function tile(x,feature=false){return `<a class="tile ${feature?"feature":""}" href="${esc(localPageUrl(x))}" data-item="${esc(x.id)}" data-section="${esc(x.section)}" target="_self">${x.image_url?`<img class="media" src="${esc(x.image_url)}" alt="" style="object-position:${Number(x.image_x??50)}% ${Number(x.image_y??50)}%;transform:scale(${Number(x.image_zoom??1)});transform-origin:${Number(x.image_x??50)}% ${Number(x.image_y??50)}%">`:""}<div class="shade"></div><div class="copy"><small>${esc(x.section)}</small><h3>${esc(x.title)}</h3><p>${esc(x.description)}</p><div class="arrow">${esc(x.button_text)}</div></div></a>`}
@@ -364,7 +351,7 @@ async function load(){
  let rows=[];try{const r=await fetch(`${SUPABASE_URL}/rest/v1/backstage_config?select=*&order=sort_order.asc`,{headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${SUPABASE_KEY}`}});if(r.ok)rows=await r.json()}catch(e){}
  const map=Object.fromEntries(rows.map(x=>[x.id,x])),items=DEFAULTS.map(d=>({...d,...(map[d.id]||{})})).filter(x=>x.enabled!==false && x.id!=="crossword" && x.id!=="emoji_1" && x.id!=="emoji_2" && x.id!=="daily_drop" && x.id!=="this_or_that");
  renderQuickGameCards(map);renderWordSearchCard(map);updateGameBadges();
- const hero=items.find(x=>x.id==="hero");if(hero)heroMount.innerHTML=`<div class="hero">${hero.image_url?`<img class="media" src="${esc(hero.image_url)}" alt="" style="object-position:${Number(hero.image_x??50)}% ${Number(hero.image_y??50)}%;transform:scale(${Number(hero.image_zoom??1)});transform-origin:${Number(hero.image_x??50)}% ${Number(hero.image_y??50)}%">`:""}<div class="shade"></div><div class="copy"><div class="kicker">FIND YOUR NEXT GIG</div><h1>${esc(hero.title)}</h1><p>${esc(hero.description)}</p><a class="btn" href="${esc(window.backstageCityLink?.('https://amg-quiz.pages.dev/')||'https://amg-quiz.pages.dev/')}" data-item="hero" data-section="Hero" target="_top">${esc(hero.button_text)}</a></div></div>`;
+ const hero=items.find(x=>x.id==="hero");if(hero)heroMount.innerHTML=`<div class="hero">${hero.image_url?`<img class="media" src="${esc(hero.image_url)}" alt="" style="object-position:${Number(hero.image_x??50)}% ${Number(hero.image_y??50)}%;transform:scale(${Number(hero.image_zoom??1)});transform-origin:${Number(hero.image_x??50)}% ${Number(hero.image_y??50)}%">`:""}<div class="shade"></div><div class="copy"><div class="kicker">FIND YOUR NEXT GIG</div><h1>${esc(hero.title)}</h1><p>${esc(hero.description)}</p><a class="btn" href="${esc(window.backstageCityLink?.('/quiz.html')||'/quiz.html')}" data-item="hero" data-section="Hero" target="_top">${esc(hero.button_text)}</a></div></div>`;
  const groups={Discover:"discoverGrid",Play:"playGrid",Watch:"watchGrid",Vault:"vaultGrid",More:"moreGrid"};
  for(const [section,id] of Object.entries(groups)){const a=items.filter(x=>x.section===section && x.id!=="all_shows" && x.id!=="based_on_what_you_like");
 
@@ -653,7 +640,7 @@ window.addEventListener('message',event=>{const i=gameFrames.findIndex(frame=>fr
  document.getElementById('openRecommendations').addEventListener('click',()=>{dialog.showModal();render(true)});
  document.getElementById('closeRecommendations').addEventListener('click',()=>dialog.close());
  dialog.addEventListener('click',e=>{if(e.target===dialog)dialog.close()});
- window.addEventListener('o2-favourites-changed',()=>render(true));
+ window.addEventListener('o2-favourites-changed',()=>window.O2Favourites.updateHearts());
  citySelect.addEventListener('change',()=>{cityChosen=true;offset=0;render()});
  refresh.addEventListener('click',()=>{offset+=4;render()});
 })();
@@ -818,7 +805,7 @@ window.addEventListener('message',event=>{const i=gameFrames.findIndex(frame=>fr
  // Keep full-page navigation, but remove the duplicate large homepage tiles.
  const hideTiles=()=>{discover.querySelectorAll('[data-item="just_announced"],[data-item="whats_on_this_week"]').forEach(el=>el.remove())};
  new MutationObserver(hideTiles).observe(document.getElementById('discoverGrid'),{childList:true});hideTiles();
- window.addEventListener('o2-favourites-changed',()=>shows().then(recommendations).catch(()=>{}));
+ window.addEventListener('o2-favourites-changed',()=>{window.O2Favourites.updateHearts();if(!liked.querySelector('.homeShowCard'))shows().then(recommendations).catch(()=>{})});
  window.addEventListener('o2-city-changed',()=>{[week,announced,liked].forEach(sec=>sec.querySelector('.homeShowRail').innerHTML='<div class="homeShowEmpty">Finding shows for your city…</div>');refresh()});
  refresh();
 })();
@@ -928,7 +915,7 @@ const quick=document.getElementById('quickGameDialog');if(quick)new MutationObse
 /* Always build the quiz URL at the moment of navigation, after the saved homepage city is current. */
 (function(){
  function city(){try{return window.O2BackstageCity?.get?.()||localStorage.getItem('o2-backstage-city-v1')||'All'}catch(e){return 'All'}}
- function quizUrl(){const u=new URL('https://amg-quiz.pages.dev/');u.searchParams.set('city',city());return window.O2Favourites.withFavourites(u.href)}
+ function quizUrl(){const u=new URL('/quiz.html',location.href);u.searchParams.set('city',city());return window.O2Favourites.withFavourites(u.href)}
  document.addEventListener('click',function(e){
   const a=e.target.closest('a[href]');
   if(!a)return;
@@ -1020,4 +1007,4 @@ const quick=document.getElementById('quickGameDialog');if(quick)new MutationObse
 #allGenreClear,#allGenreDone{font:700 13px Arial;cursor:pointer;min-height:40px;border-radius:999px;padding:10px 16px;white-space:nowrap}
 #allGenreClear{border:0;background:transparent;color:#0050ff}#allGenreDone{border:0;background:#0050ff;color:white}
 @media(max-width:600px){#allShowsGenre .allGenreOptions{position:static;width:100%;box-shadow:none;border:0;border-top:1px solid #e6ebf4;border-radius:0 0 12px 12px}#allShowsGenre{grid-column:1/-1}}
-</style><script>(()=>{const picker=document.getElementById('allShowsGenre');document.getElementById('allGenreDone').addEventListener('click',()=>{picker.open=false;picker.querySelector('summary').focus()});document.addEventListener('click',e=>{if(picker.open&&!picker.contains(e.target))picker.open=false});picker.addEventListener('keydown',e=>{if(e.key==='Escape'){picker.open=false;picker.querySelector('summary').focus()}})})();</script><script>(function(){const labels={'find your vibe':'Find your vibe','just announced':'Just announced','what’s on this week':'What’s on this week',"what's on this week":"What's on this week",'my favourites':'My favourites','all shows':'All shows','mystery gig':'Mystery gig','guess the song':'Guess the song','guess the artist':'Guess the artist','word search':'Word search'};function fix(){document.querySelectorAll('h1,h2,h3,h4').forEach(el=>{if(el.children.length)return;const t=labels[el.textContent.trim().toLowerCase()];if(t&&el.textContent!==t)el.textContent=t;});}new MutationObserver(fix).observe(document.body,{childList:true,subtree:true});fix();})();</script></body></html>
+</style><script>(()=>{const picker=document.getElementById('allShowsGenre');document.getElementById('allGenreDone').addEventListener('click',()=>{picker.open=false;picker.querySelector('summary').focus()});document.addEventListener('click',e=>{if(picker.open&&!picker.contains(e.target))picker.open=false});picker.addEventListener('keydown',e=>{if(e.key==='Escape'){picker.open=false;picker.querySelector('summary').focus()}})})();</script><script>(function(){const labels={'find your vibe':'Find your vibe','just announced':'Just announced','what’s on this week':'What’s on this week',"what's on this week":"What's on this week",'my favourites':'My favourites','all shows':'All shows','mystery gig':'Mystery gig','guess the song':'Guess the song','guess the artist':'Guess the artist','word search':'Word search'};function fix(){document.querySelectorAll('h1,h2,h3,h4').forEach(el=>{if(el.children.length)return;const t=labels[el.textContent.trim().toLowerCase()];if(t&&el.textContent!==t)el.textContent=t;});}new MutationObserver(fix).observe(document.body,{childList:true,subtree:true});fix();})();</script><style id="shared-heart-style">.fav-heart{display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:none!important;width:42px!important;height:42px!important;border-radius:50%!important;border:1px solid #dfe5f2!important;background:#fff!important;color:#0050ff!important;font-size:24px!important;line-height:1!important;padding:0!important;box-shadow:0 2px 9px #00000012!important}.fav-heart[aria-pressed="true"]{color:#e6007e!important;background:#fff0f7!important;border-color:#f4b4d4!important}</style></body></html>
