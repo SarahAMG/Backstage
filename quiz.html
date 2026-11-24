@@ -119,14 +119,7 @@ const KEY='o2-favourite-shows-v1', TOKEN_KEY='o2-favourites-private-key-v2';
 const API='https://amg-favourites.sarah-tait.workers.dev/favourites';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function read(){try{const v=JSON.parse(localStorage.getItem(KEY)||'{}');return v&&typeof v==='object'&&!Array.isArray(v)?v:{}}catch(e){return {}}}
-let state=read(),token=localStorage.getItem(TOKEN_KEY)||'',busy=Promise.resolve(),lastRefresh=0;
-const incoming=new URLSearchParams(location.hash.slice(1)).get('favkey');
-const valid=t=>/^[a-f0-9]{64}$/.test(t||'');
-const previous=token;
-if(valid(incoming)){token=incoming;history.replaceState(history.state,'',location.pathname+location.search);}
-if(!valid(token)){token=Array.from(crypto.getRandomValues(new Uint8Array(32)),x=>x.toString(16).padStart(2,'0')).join('');}
-localStorage.setItem(TOKEN_KEY,token);
-const migrationKey='o2-favourites-migrated-'+token;
+let state=read();
 const registry=new Map();
 const id=s=>String(s?.id??'').trim();
 function record(s){return {id:id(s),artist:String(s.artist||''),city:String(s.city||''),venue:String(s.venues?.name||s.venue_name||s.venue||(s.city==='Liverpool'?'O2 Academy Liverpool':'')),date:String(s.event_date||s.date||'').slice(0,10),ticket_url:String(s.ticket_url||''),image_url:String(s.image_url||'')}}
@@ -137,20 +130,14 @@ function isSaved(s){return !!(state[id(s)]&&!state[id(s)].deleted)}
 function heart(s){const on=isSaved(s);return `<button class="fav-heart" type="button" data-fav-id="${esc(id(s))}" aria-label="${on?'Remove from':'Add to'} favourites" aria-pressed="${on}" title="${on?'Remove from favourites':'Save show'}">${on?'♥':'♡'}</button>`}
 function register(s){if(!id(s))return;registry.set(id(s),s);const old=state[id(s)];if(old&&!old.deleted){const fresh=record(s);if(fresh.venue&&fresh.venue!==old.venue){state[id(s)]={...old,venue:fresh.venue};localStorage.setItem(KEY,JSON.stringify(state))}}}
 function updateHearts(){document.querySelectorAll('[data-fav-id]').forEach(b=>{const on=isSaved({id:b.dataset.favId});b.textContent=on?'♥':'♡';b.setAttribute('aria-pressed',String(on));b.setAttribute('aria-label',on?'Remove from favourites':'Add to favourites')})}
-function fromRemote(items){const next={};for(const s of items){if(!s?.id)continue;const x=record(s);next[x.id]=x}state=next;persist()}
-async function request(method,items,secret=token){const r=await fetch(API,{method,headers:{'Authorization':'Bearer '+secret,...(method==='PUT'?{'Content-Type':'application/json'}:{})},...(method==='PUT'?{body:JSON.stringify({favourites:items.map(s=>({...s,event_date:s.date||s.event_date||''}))})}:{})});if(!r.ok)throw Error('Sync failed ('+r.status+')');return r.json()}
-function warn(){const el=document.getElementById('favSyncStatus');if(el)el.textContent='Could not sync right now. Please check your connection.'}
-async function refresh(force=false){if(!token||(!force&&Date.now()-lastRefresh<3000))return;await busy;try{const data=await request('GET');fromRemote(data.favourites||[]);lastRefresh=Date.now()}catch(e){warn();console.warn(e)}}
-function save(s){const x=record(s);if(!x.id)return false;const add=!isSaved(x);state[x.id]={...x,deleted:!add};persist();if(token){const secret=token;busy=busy.catch(()=>{}).then(async()=>{try{const data=await request('GET',null,secret);const map=new Map((data.favourites||[]).map(y=>[String(y.id),y]));if(add)map.set(x.id,{...x,event_date:x.date});else map.delete(x.id);await request('PUT',[...map.values()],secret);if(secret===token){const confirmed=await request('GET',null,secret);fromRemote(confirmed.favourites||[]);lastRefresh=Date.now()}}catch(e){warn();console.warn(e)}})}return add}
+function refresh(){const next=read();if(JSON.stringify(next)!==JSON.stringify(state)){state=next;changed()}else updateHearts()}
+function save(s){state=read();const x=record(s);if(!x.id)return false;const add=!isSaved(x);state[x.id]={...x,deleted:!add};persist();return add}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-fav-id]');if(!b)return;e.preventDefault();e.stopImmediatePropagation();const s=registry.get(b.dataset.favId)||state[b.dataset.favId];if(s)save(s)},true);
-window.addEventListener('storage',e=>{if(e.key===KEY){state=read();changed()}if(e.key===TOKEN_KEY){token=e.newValue||'';refresh(true)}});
-window.addEventListener('focus',()=>refresh(true));document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
-function withFavourites(raw){const u=new URL(raw,location.href);if(u.origin==='https://amg-quiz.pages.dev'){u.hash=new URLSearchParams({favkey:token}).toString();}return u.href;}
+window.addEventListener('storage',e=>{if(e.key===KEY)refresh()});
+window.addEventListener('focus',refresh);window.addEventListener('pageshow',refresh);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
+function withFavourites(raw){return new URL(raw,location.href).href}
 window.O2Favourites={register,heart,save,active,isSaved,updateHearts,withFavourites,esc,refresh};
-busy=(async()=>{try{if(!localStorage.getItem(migrationKey)){const data=await request('GET');const map=new Map((data.favourites||[]).map(x=>[String(x.id),x]));for(const x of active())if(!map.has(x.id))map.set(x.id,x);await request('PUT',[...map.values()]);localStorage.setItem(migrationKey,'1');}}catch(e){console.warn('Favourites migration failed',e)}})();
-refresh(true);
-window.addEventListener('pageshow',()=>refresh(true));
-// The optional connection panel is not displayed in the quiz UI.
 })();
 </script><body>
 <button type="button" class="backstageBack" id="backToBackstage" aria-label="Back">← BACK</button>
@@ -452,11 +439,11 @@ document.addEventListener("click",e=>{
 <script>
 document.getElementById("backToBackstage").addEventListener("click",function(){
   if (window.history.length > 1) window.history.back();
-  else window.location.href = "https://o2-show-register.pages.dev/";
+  else window.location.href = "/";
 });
 </script>
 
 <script id="favourites-back-navigation">
 (function(){const b=document.getElementById('backToBackstage');if(!b)return;b.addEventListener('click',function(e){try{const ref=new URL(document.referrer);if(ref.hostname.endsWith('.pages.dev')&&ref.origin!==location.origin){e.stopImmediatePropagation();location.href=window.O2Favourites.withFavourites(ref.href)}}catch(err){}},true)})();
-</script></body>
+</script><script>document.addEventListener('click',function(e){if(e.target.closest('#backToBackstage')){e.preventDefault();e.stopImmediatePropagation();location.assign('/');}},true);</script><style id="shared-heart-style">.fav-heart{display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:none!important;width:42px!important;height:42px!important;border-radius:50%!important;border:1px solid #dfe5f2!important;background:#fff!important;color:#0050ff!important;font-size:24px!important;line-height:1!important;padding:0!important;box-shadow:0 2px 9px #00000012!important}.fav-heart[aria-pressed="true"]{color:#e6007e!important;background:#fff0f7!important;border-color:#f4b4d4!important}</style></body>
 </html>
